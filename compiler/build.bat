@@ -1,7 +1,7 @@
 @echo off
 setlocal
 
-set SOURCE=main.cpp lexer.cpp error.cpp opcode.cpp
+set SOURCE=main.cpp lexer.cpp error.cpp isa_helper.cpp
 set BUILD_DIR=build
 set OUT=compiler.exe
 

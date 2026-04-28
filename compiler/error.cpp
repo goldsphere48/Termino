@@ -8,11 +8,15 @@ std::string TranslateMessageType(ErrorType type)
     switch(type)
     {
     case ErrorType::UNKNOWN_INSTRUCTION:
-        return "Met unknown instruction {}";
+        return "Unknown instruction {}";
     case ErrorType::INTEGER_LITERAL_OVERFLOW:
         return "Integer literal {} is out of range";
     case ErrorType::FLOAT_LITERAL_OVERFLOW:
         return "Floating literal {} is out of range";
+    case ErrorType::UNKNOWN_DIRECTIVE:
+        return "Met unknown directive {}";
+    case ErrorType::INVALID_LABEL:
+        return "Invalid label {}";
     }
 
     return "Unknown error";

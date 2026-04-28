@@ -1,0 +1,140 @@
+.data
+
+counter:
+.bytes 0
+
+pixel_x:
+.bytes 0
+
+pixel_y:
+.bytes 0
+
+sprite_id:
+.bytes 0
+
+.code
+
+main:
+    push8 0
+    store counter
+
+    push8 10
+    push8 20
+    add
+    pop
+
+    push16 1000
+    push16 250
+    sub
+    pop
+
+    pushf 3.14
+    pushf 2.0
+    mul
+    pop
+
+    push8 100
+    push8 4
+    div
+    pop
+
+    push8 17
+    push8 5
+    mod
+    pop
+
+    push8 1
+    push8 3
+    shl
+    pop
+
+    push8 32
+    push8 2
+    shr
+    pop
+
+    push8 12
+    push8 10
+    and
+    pop
+
+    push8 12
+    push8 10
+    or
+    pop
+
+    push8 5
+    push8 5
+    eq
+    pop
+
+    push8 5
+    push8 6
+    neq
+    pop
+
+    push8 7
+    push8 3
+    gt
+    pop
+
+    push8 3
+    push8 7
+    lt
+    pop
+
+    push8 42
+    dup
+    swap
+    pop
+    pop
+
+    sys_clear
+
+loop:
+    load counter
+    push8 100
+    eq
+    jmp_f tick
+
+    jmp end
+
+tick:
+    load counter
+    push8 1
+    add
+    store counter
+
+    load counter
+    store pixel_x
+    load counter
+    store pixel_y
+
+    load pixel_x
+    load pixel_y
+    sys_pixel
+
+    push8 0
+    push8 0
+    push8 64
+    push8 64
+    sys_line
+
+    load sprite_id
+    push8 16
+    push8 16
+    sys_sprite
+
+    push8 1
+    sys_btn
+    pop
+
+    push8 65
+    sys_print
+
+    sys_frame
+    jmp loop
+
+end:
+    halt
+
