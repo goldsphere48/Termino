@@ -1,5 +1,7 @@
 #include "isa_helper.h"
 
+#include "lexer.h"
+
 #include <unordered_map>
 #include <string>
 
@@ -11,11 +13,13 @@ namespace Stringify
         {
         case TOKEN_TYPE::INT:         return "INT";
         case TOKEN_TYPE::FLOAT:       return "FLOAT";
+        case TOKEN_TYPE::STRING:      return "STRING";
         case TOKEN_TYPE::INSTRUCTION: return "INSTRUCTION";
         case TOKEN_TYPE::DIRECTIVE:   return "DIRECTIVE";
         case TOKEN_TYPE::LABEL_DEF:   return "LABEL_DEF";
         case TOKEN_TYPE::IDENTIFIER:  return "IDENTIFIER";
         case TOKEN_TYPE::OPERATOR:    return "OPERATOR";
+        case TOKEN_TYPE::END_OF_FILE: return "EOF";
         }
 
         return "?";
@@ -65,9 +69,11 @@ namespace Stringify
     {
         switch (type)
         {
-        case DIRECTIVE::DATA:  return "DATA";
-        case DIRECTIVE::CODE:  return "CODE";
-        case DIRECTIVE::BYTES: return "BYTES";
+        case DIRECTIVE::DATA:   return "DATA";
+        case DIRECTIVE::CODE:   return "CODE";
+        case DIRECTIVE::BYTES:  return "BYTES";
+        case DIRECTIVE::STRING: return "STRING";
+        case DIRECTIVE::EQU:    return "EQU";
         }
 
         return "?";
@@ -79,16 +85,44 @@ namespace Stringify
         {
         case OPERATOR::MINUS:   return "MINUS";
         case OPERATOR::PLUS:    return "PLUS";
-        case OPERATOR::DIV:     return "DIV";
-        case OPERATOR::MUL:     return "MUL";
-        case OPERATOR::MOD:     return "MOD";
-        case OPERATOR::BIT_AND: return "BIT_AND";
-        case OPERATOR::BIT_OR:  return "BIT_OR";
-        case OPERATOR::BIT_NOT: return "BIT_NOT";
-        case OPERATOR::BIT_XOR: return "BIT_XOR";
         }
 
         return "?";
+    }
+
+    std::string tokenValue(const Token& token)
+    {
+        if (token.hasInt())
+        {
+            return std::to_string(token.getInt());
+        }
+    
+        if (token.hasFloat())
+        {
+            return std::to_string(token.getFloat());
+        }
+    
+        if (token.hasString())
+        {
+            return token.getString();
+        }
+
+        if (token.hasOpCode())
+        {
+            return std::string(Stringify::opCode(token.getOpCode()));
+        }
+
+        if (token.hasDirective())
+        {
+            return std::string(Stringify::directive(token.getDirective()));
+        }
+
+        if (token.hasOperator())
+        {
+            return std::string(Stringify::oper(token.getOperator()));
+        }
+
+        return std::string(Stringify::tokenType(token.type));
     }
 }
 
@@ -99,11 +133,13 @@ namespace Convert
         static const std::unordered_map<std::string_view, TOKEN_TYPE> table = {
             { "INT",         TOKEN_TYPE::INT         },
             { "FLOAT",       TOKEN_TYPE::FLOAT       },
+            { "STRING",      TOKEN_TYPE::STRING      },
             { "INSTRUCTION", TOKEN_TYPE::INSTRUCTION },
             { "DIRECTIVE",   TOKEN_TYPE::DIRECTIVE   },
             { "LABEL_DEF",   TOKEN_TYPE::LABEL_DEF   },
             { "IDENTIFIER",  TOKEN_TYPE::IDENTIFIER  },
             { "OPERATOR",    TOKEN_TYPE::OPERATOR    },
+            { "EOF",         TOKEN_TYPE::END_OF_FILE },
         };
 
         if (auto it = table.find(str); it != table.end())
@@ -161,9 +197,11 @@ namespace Convert
     std::optional<DIRECTIVE> directive(std::string_view str)
     {
         static const std::unordered_map<std::string_view, DIRECTIVE> table = {
-            { "DATA",  DIRECTIVE::DATA  },
-            { "CODE",  DIRECTIVE::CODE  },
-            { "BYTES", DIRECTIVE::BYTES },
+            { "DATA",  DIRECTIVE::DATA   },
+            { "CODE",  DIRECTIVE::CODE   },
+            { "BYTES", DIRECTIVE::BYTES  },
+            { "BYTES", DIRECTIVE::STRING },
+            { "EQU",   DIRECTIVE::EQU    },
         };
 
         if (auto it = table.find(str); it != table.end())
@@ -179,13 +217,6 @@ namespace Convert
         static const std::unordered_map<std::string_view, OPERATOR> table = {
             { "-", OPERATOR::MINUS   },
             { "+", OPERATOR::PLUS    },
-            { "/", OPERATOR::DIV     },
-            { "*", OPERATOR::MUL     },
-            { "%", OPERATOR::MOD     },
-            { "&", OPERATOR::BIT_AND },
-            { "|", OPERATOR::BIT_OR  },
-            { "~", OPERATOR::BIT_NOT },
-            { "^", OPERATOR::BIT_XOR },
         };
 
         if (auto it = table.find(str); it != table.end())

@@ -6,6 +6,8 @@
 #include <initializer_list>
 #include <ostream>
 
+#include "isa.h"
+
 enum class ErrorType
 {
     UNKNOWN_INSTRUCTION = 1000,
@@ -13,28 +15,40 @@ enum class ErrorType
     FLOAT_LITERAL_OVERFLOW,
     UNKNOWN_DIRECTIVE,
     INVALID_LABEL,
+    UNEXPECTED_TOKEN_TYPE,
+    UNEXPECTED_DIRECTIVE,
+    UNEXPECTED_OPERATOR,
+    EXPECTED_DATA_DIRECTIVE,
+    BYTE_LITERAL_OVERFLOW,
+    EXPECTED_BYTE_LITERAL,
+    UNRECOGNIZED_TOKEN,
 };
 
 class ErrorMessage
 {
 public:
-    ErrorMessage(ErrorType errorType, const std::string& filename, int line, int column, std::initializer_list<std::string> args = {});
+    ErrorMessage(ErrorType errorType, int line, int column, std::initializer_list<std::string> args = {});
 
-    std::string format() const;
+    std::string format(const std::string& filename) const;
 private:
     ErrorType                m_errorType;
     int                      m_line;
     int                      m_column;
     std::vector<std::string> m_args;
-    std::string              m_filename;
-
-    friend std::ostream& operator<<(std::ostream& stream, const ErrorMessage& msg);
 };
+
+enum class TOKEN_TYPE;
+class Token;
 
 class ErrorCollector
 {
 public:
     ErrorCollector(const std::string& filename);
+
+    void reportUnexpectedToken(TOKEN_TYPE expected, const Token& token);
+    void reportUnexpectedDirective(DIRECTIVE expected, DIRECTIVE actual, const Token& token);
+    void reportUnexpectedOperator(OPERATOR expected, OPERATOR actual, const Token& token);
+    void reportUnrecognizedToken(const Token& token);
     
     void report(ErrorType errorType, int line, int column, std::initializer_list<std::string> args = {});
     bool hasError();
@@ -44,5 +58,3 @@ private:
     std::vector<ErrorMessage> m_errors;
     std::string m_filename;
 };
-
-std::ostream& operator<<(std::ostream& stream, const ErrorMessage& msg);

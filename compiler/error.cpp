@@ -1,9 +1,12 @@
 #include "error.h"
 
+#include "isa_helper.h"
+#include "lexer.h"
+
 #include <format>
 #include <iostream>
 
-std::string TranslateMessageType(ErrorType type)
+std::string errorTemplate(ErrorType type)
 {
     switch(type)
     {
@@ -14,23 +17,37 @@ std::string TranslateMessageType(ErrorType type)
     case ErrorType::FLOAT_LITERAL_OVERFLOW:
         return "Floating literal {} is out of range";
     case ErrorType::UNKNOWN_DIRECTIVE:
-        return "Met unknown directive {}";
+        return "Unknown directive {}";
     case ErrorType::INVALID_LABEL:
         return "Invalid label {}";
+    case ErrorType::UNEXPECTED_TOKEN_TYPE:
+        return "Unexpected token type {}, expected {}";
+    case ErrorType::EXPECTED_DATA_DIRECTIVE:
+        return "Expected data directive, got {}";
+    case ErrorType::BYTE_LITERAL_OVERFLOW:
+        return "Byte literal overflow {}";
+    case ErrorType::UNRECOGNIZED_TOKEN:
+        return "Unrecognized token {}";
+    case ErrorType::UNEXPECTED_DIRECTIVE:
+        return "Unexpected directive {}, expected {}";
+    case ErrorType::UNEXPECTED_OPERATOR:
+        return "Unexpected operator {}, expected {}";
+    case ErrorType::EXPECTED_BYTE_LITERAL:
+        return "Expected byte literal, got {}";
     }
 
     return "Unknown error";
 }
 
-ErrorMessage::ErrorMessage(ErrorType errorType, const std::string& filename, int line, int column, std::initializer_list<std::string> args)
-    : m_errorType(errorType), m_line(line), m_column(column), m_args(args), m_filename(filename)
+ErrorMessage::ErrorMessage(ErrorType errorType, int line, int column, std::initializer_list<std::string> args)
+    : m_errorType(errorType), m_line(line), m_column(column), m_args(args)
 {
     
 }
 
-std::string ErrorMessage::format() const
+std::string ErrorMessage::format(const std::string& filename) const
 {
-    std::string templ = TranslateMessageType(m_errorType);
+    std::string templ = errorTemplate(m_errorType);
 
     switch(m_args.size())
     {
@@ -45,7 +62,7 @@ std::string ErrorMessage::format() const
         break;
     }
     
-    return std::format("{}:{}:{}: error: {}", m_filename, m_line, m_column, templ);
+    return std::format("{}:{}:{}: error: {}", filename, m_line, m_column, templ);
 }
 
 ErrorCollector::ErrorCollector(const std::string& filename)
@@ -56,7 +73,57 @@ ErrorCollector::ErrorCollector(const std::string& filename)
 
 void ErrorCollector::report(ErrorType errorType, int line, int column, std::initializer_list<std::string> args)
 {
-    m_errors.emplace_back(errorType, m_filename, line, column, args);
+    m_errors.emplace_back(errorType, line, column, args);
+}
+
+void ErrorCollector::reportUnexpectedToken(TOKEN_TYPE expected, const Token& token)
+{
+    std::string gotStr = std::string(Stringify::tokenType(token.type));
+    std::string expectedStr = std::string(Stringify::tokenType(expected));
+        
+    report(
+        ErrorType::UNEXPECTED_TOKEN_TYPE,
+        token.line,
+        token.column,
+        { gotStr, expectedStr }
+    );
+}
+
+void ErrorCollector::reportUnexpectedDirective(DIRECTIVE expected, DIRECTIVE actual, const Token& token)
+{
+    std::string actualStr = std::string(Stringify::directive(actual));
+    std::string expectedStr = std::string(Stringify::directive(expected));
+        
+    report(
+        ErrorType::UNEXPECTED_DIRECTIVE,
+        token.line,
+        token.column,
+        { actualStr, expectedStr }
+    );
+}
+
+void ErrorCollector::reportUnexpectedOperator(OPERATOR expected, OPERATOR actual, const Token& token)
+{
+    std::string actualStr = std::string(Stringify::oper(actual));
+    std::string expectedStr = std::string(Stringify::oper(expected));
+        
+    report(
+        ErrorType::UNEXPECTED_OPERATOR,
+        token.line,
+        token.column,
+        { actualStr, expectedStr }
+    );
+}
+
+void ErrorCollector::reportUnrecognizedToken(const Token& token)
+{
+    std::string tokenStr = std::string(Stringify::tokenValue(token));
+    report(
+        ErrorType::UNRECOGNIZED_TOKEN,
+        token.line,
+        token.column,
+        { tokenStr }
+    );   
 }
 
 bool ErrorCollector::hasError()
@@ -66,18 +133,13 @@ bool ErrorCollector::hasError()
 
 void ErrorCollector::printAll()
 {
-    for (auto e : m_errors)
+    for (const ErrorMessage& e : m_errors)
     {
-        std::cerr << e << std::endl;
+        std::cerr << e.format(m_filename) << std::endl;
     }
 }
 
 void ErrorCollector::clear()
 {
     m_errors.clear();
-}
-
-std::ostream& operator<<(std::ostream& stream, const ErrorMessage& msg)
-{
-    return stream << msg.format();;
 }

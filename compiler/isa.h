@@ -7,11 +7,13 @@ enum class TOKEN_TYPE
 {
     INT,
     FLOAT,
+    STRING,
     INSTRUCTION,
     DIRECTIVE,
     LABEL_DEF,
     IDENTIFIER,
     OPERATOR,
+    END_OF_FILE,
 };
 
 enum class OP_CODE
@@ -59,17 +61,12 @@ enum class DIRECTIVE
     DATA,
     CODE,
     BYTES,
+    STRING,
+    EQU,
 };
  
 enum class OPERATOR
 {
     MINUS,
     PLUS,
-    DIV,
-    MUL,
-    MOD,
-    BIT_AND,
-    BIT_OR,
-    BIT_NOT,
-    BIT_XOR,
 };

@@ -1,4 +1,5 @@
 #include "lexer.h"
+#include "parser.h"
 
 #include <iostream>
 #include <fstream>
@@ -34,9 +35,22 @@ int main(int argc, char** argv)
         errors.printAll();
         return 1;
     }
-    
+
+    errors.clear();
+
     for (const Token token : tokens)
     {
         PrintToken(token);
     }
+
+    Parser parser(tokens, errors);
+    ProgramNode ast = parser.parse();
+    
+    if (errors.hasError())
+    {
+        errors.printAll();
+        return 1;
+    }
+
+    ast.print();
 }

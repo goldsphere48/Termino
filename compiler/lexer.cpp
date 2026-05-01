@@ -13,14 +13,7 @@ bool IsOperator(char symbol)
 {
     return
         symbol == '-' ||
-        symbol == '+' ||
-        symbol == '*' ||
-        symbol == '/' ||
-        symbol == '%' ||
-        symbol == '^' ||
-        symbol == '&' ||
-        symbol == '|' ||
-        symbol == '~';
+        symbol == '+';
 }
 
 bool IsLetter(char symbol)
@@ -202,10 +195,10 @@ std::vector<Token> Lexer::tokenize(const std::string& source) const
             {
                 result.push_back(
                     Token {
-                        .Type = TOKEN_TYPE::LABEL_DEF,
-                        .Value = label,
-                        .Line = tokenStartLine,
-                        .Column = tokenStartColumn
+                        .type = TOKEN_TYPE::LABEL_DEF,
+                        .value = label,
+                        .line = tokenStartLine,
+                        .column = tokenStartColumn
                     }
                 );
             }
@@ -220,10 +213,10 @@ std::vector<Token> Lexer::tokenize(const std::string& source) const
             {
                 result.push_back(
                     Token {
-                        .Type = TOKEN_TYPE::DIRECTIVE,
-                        .Value = directive.value(),
-                        .Line = tokenStartLine,
-                        .Column = tokenStartColumn
+                        .type = TOKEN_TYPE::DIRECTIVE,
+                        .value = directive.value(),
+                        .line = tokenStartLine,
+                        .column = tokenStartColumn
                     }
                 );
             }
@@ -236,10 +229,10 @@ std::vector<Token> Lexer::tokenize(const std::string& source) const
         {
             result.push_back(
                 Token {
-                    .Type = TOKEN_TYPE::INSTRUCTION,
-                    .Value = keyword.value(),
-                    .Line = tokenStartLine,
-                    .Column = tokenStartColumn
+                    .type = TOKEN_TYPE::INSTRUCTION,
+                    .value = keyword.value(),
+                    .line = tokenStartLine,
+                    .column = tokenStartColumn
                 }
             );
         }
@@ -247,10 +240,10 @@ std::vector<Token> Lexer::tokenize(const std::string& source) const
         {
             result.push_back(
                 Token {
-                    .Type = TOKEN_TYPE::OPERATOR,
-                    .Value = oper.value(),
-                    .Line = tokenStartLine,
-                    .Column = tokenStartColumn
+                    .type = TOKEN_TYPE::OPERATOR,
+                    .value = oper.value(),
+                    .line = tokenStartLine,
+                    .column = tokenStartColumn
                 }
             );
         }
@@ -271,10 +264,10 @@ std::vector<Token> Lexer::tokenize(const std::string& source) const
                 {   
                     result.push_back(
                         Token {
-                            .Type = TOKEN_TYPE::INT,
-                            .Value = intValue,
-                            .Line = tokenStartLine,
-                            .Column = tokenStartColumn
+                            .type = TOKEN_TYPE::INT,
+                            .value = intValue,
+                            .line = tokenStartLine,
+                            .column = tokenStartColumn
                         }
                     );
                 }
@@ -295,10 +288,10 @@ std::vector<Token> Lexer::tokenize(const std::string& source) const
                 {
                     result.push_back(
                         Token {
-                            .Type = TOKEN_TYPE::FLOAT,
-                            .Value = floatValue,
-                            .Line = tokenStartLine,
-                            .Column = tokenStartColumn
+                            .type = TOKEN_TYPE::FLOAT,
+                            .value = floatValue,
+                            .line = tokenStartLine,
+                            .column = tokenStartColumn
                         }
                     );
                 }
@@ -315,18 +308,27 @@ std::vector<Token> Lexer::tokenize(const std::string& source) const
         {
             result.push_back(
                 Token {
-                    .Type = TOKEN_TYPE::IDENTIFIER,
-                    .Value = origin,
-                    .Line = tokenStartLine,
-                    .Column = tokenStartColumn
+                    .type = TOKEN_TYPE::IDENTIFIER,
+                    .value = origin,
+                    .line = tokenStartLine,
+                    .column = tokenStartColumn
                 }
             );
         }
         else
         {
-            m_errorCollector.report(ErrorType::UNKNOWN_INSTRUCTION, line, tokenStartColumn, { value });
+            m_errorCollector.report(ErrorType::UNKNOWN_INSTRUCTION, line, tokenStartColumn, { origin });
         }
     }
+    
+    result.push_back(
+        Token {
+            .type = TOKEN_TYPE::END_OF_FILE,
+            .value = "",
+            .line = line,
+            .column = column
+        }
+    );
     
     return result;
 }
@@ -334,7 +336,7 @@ std::vector<Token> Lexer::tokenize(const std::string& source) const
 void PrintToken(const Token& token)
 {
     std::cout << "{ TOKEN_TYPE = "
-              << Stringify::tokenType(token.Type)
+              << Stringify::tokenType(token.type)
               << ", Value = ";
     
     if (token.hasInt())

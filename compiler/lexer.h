@@ -19,24 +19,24 @@ using TokenValue = std::variant<
 
 struct Token
 {
-    TOKEN_TYPE Type;
-    TokenValue Value;
-    std::size_t Line;
-    std::size_t Column;
+    TOKEN_TYPE type;
+    TokenValue value;
+    std::size_t line;
+    std::size_t column;
 
-    bool hasInt() const { return std::holds_alternative<int>(Value); }
-    bool hasFloat() const { return std::holds_alternative<float>(Value); }
-    bool hasString() const { return std::holds_alternative<std::string>(Value); }
-    bool hasOpCode() const { return std::holds_alternative<OP_CODE>(Value);}
-    bool hasDirective() const { return std::holds_alternative<DIRECTIVE>(Value);}
-    bool hasOperator() const { return std::holds_alternative<OPERATOR>(Value);}
+    bool hasInt() const { return std::holds_alternative<int>(value); }
+    bool hasFloat() const { return std::holds_alternative<float>(value); }
+    bool hasString() const { return std::holds_alternative<std::string>(value); }
+    bool hasOpCode() const { return std::holds_alternative<OP_CODE>(value);}
+    bool hasDirective() const { return std::holds_alternative<DIRECTIVE>(value);}
+    bool hasOperator() const { return std::holds_alternative<OPERATOR>(value);}
 
-    int getInt() const { return std::get<int>(Value); }
-    float getFloat() const { return std::get<float>(Value); }
-    const std::string& getString() const { return std::get<std::string>(Value); }
-    OP_CODE getOpCode() const { return std::get<OP_CODE>(Value); }
-    DIRECTIVE getDirective() const { return std::get<DIRECTIVE>(Value); }
-    OPERATOR getOperator() const { return std::get<OPERATOR>(Value); }
+    int getInt() const { return std::get<int>(value); }
+    float getFloat() const { return std::get<float>(value); }
+    const std::string& getString() const { return std::get<std::string>(value); }
+    OP_CODE getOpCode() const { return std::get<OP_CODE>(value); }
+    DIRECTIVE getDirective() const { return std::get<DIRECTIVE>(value); }
+    OPERATOR getOperator() const { return std::get<OPERATOR>(value); }
 };
 
 class Lexer
