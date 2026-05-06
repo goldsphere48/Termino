@@ -79,7 +79,7 @@ public:
     {
         std::cout << "DATA NODE" << std::endl;
         std::cout << "Label: " << label << " " << "value: ";
-        if (dataDirective == DIRECTIVE::BYTES)
+        if (dataDirective == DIRECTIVE::BYTE)
         {
             for (const auto& e : expressions)
             {

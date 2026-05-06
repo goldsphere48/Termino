@@ -169,7 +169,7 @@ std::unique_ptr<DataNode> Parser::parseDataNode()
                 return nullptr;
             }
         }
-        else if (match(DIRECTIVE::BYTES))
+        else if (match(DIRECTIVE::BYTE))
         {            
             while (true)
             {
@@ -195,7 +195,7 @@ std::unique_ptr<DataNode> Parser::parseDataNode()
                 return nullptr;
             }
             
-            node->dataDirective = DIRECTIVE::BYTES;
+            node->dataDirective = DIRECTIVE::BYTE;
         }
         else
         {

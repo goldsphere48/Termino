@@ -5,7 +5,7 @@
 
 enum class TOKEN_TYPE
 {
-    INT,
+    INT = 0x0,
     FLOAT,
     STRING,
     INSTRUCTION,
@@ -58,11 +58,15 @@ enum class OP_CODE
 
 enum class DIRECTIVE
 {
-    DATA,
+    DATA = 0x0,
     CODE,
-    BYTES,
+    BYTE,
+    SHORT,
+    WORD,
+    DWORD,
     STRING,
     EQU,
+    FILL,
 };
  
 enum class OPERATOR

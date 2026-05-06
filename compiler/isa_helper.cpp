@@ -71,7 +71,11 @@ namespace Stringify
         {
         case DIRECTIVE::DATA:   return "DATA";
         case DIRECTIVE::CODE:   return "CODE";
-        case DIRECTIVE::BYTES:  return "BYTES";
+        case DIRECTIVE::BYTE:   return "BYTE";
+        case DIRECTIVE::SHORT:  return "SHORT";
+        case DIRECTIVE::WORD:   return "WORD";
+        case DIRECTIVE::DWORD:  return "DWORD";
+        case DIRECTIVE::FILL:   return "FILL";
         case DIRECTIVE::STRING: return "STRING";
         case DIRECTIVE::EQU:    return "EQU";
         }
@@ -199,7 +203,11 @@ namespace Convert
         static const std::unordered_map<std::string_view, DIRECTIVE> table = {
             { "DATA",   DIRECTIVE::DATA   },
             { "CODE",   DIRECTIVE::CODE   },
-            { "BYTES",  DIRECTIVE::BYTES  },
+            { "BYTE",   DIRECTIVE::BYTE   },
+            { "SHORT",  DIRECTIVE::SHORT  },
+            { "WORD",   DIRECTIVE::WORD   },
+            { "DWORD",  DIRECTIVE::DWORD  },
+            { "FILL",   DIRECTIVE::FILL   },
             { "STRING", DIRECTIVE::STRING },
             { "EQU",    DIRECTIVE::EQU    },
         };
