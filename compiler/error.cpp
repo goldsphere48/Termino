@@ -36,6 +36,11 @@ std::string errorTemplate(ErrorType type)
         return "Expected byte literal, got {}";
     case ErrorType::UNEXPECTED_END_OF_STRING:
         return "Unexpected end of string literal";
+    case ErrorType::INVALID_EXPRESSION:
+        return "Invalid expression";
+    case ErrorType::EQU_ITEM_DUPLICATION:
+        return "Duplication of definition {}";
+
     }
 
     return "Unknown error";

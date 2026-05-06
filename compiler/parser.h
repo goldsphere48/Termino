@@ -4,6 +4,9 @@
 
 #include <memory>
 #include <iostream>
+#include <unordered_map>
+
+#include "isa_helper.h"
 
 /*
 GRAMMAR
@@ -37,7 +40,10 @@ class ASTNode
 public:
     virtual ~ASTNode() = default;
 
-    virtual void print() const { };
+    virtual void print(int indent) const { };
+
+    size_t line;
+    size_t column;
 };
 
 class ExpressionNode : public ASTNode
@@ -50,6 +56,21 @@ class NumberNode : public ExpressionNode
 {
 public:
     std::variant<int, float> value;
+
+    void print(int indent) const override
+    {
+        std::visit([](auto&& v) {
+            using T = std::decay_t<decltype(v)>;
+            if constexpr (std::is_same_v<T, int>)
+            {
+                std::cout << '[' << v << ']';
+            }
+            if constexpr (std::is_same_v<T, float>)
+            {
+                std::cout << '[' << v << ']';
+            }
+        }, value);
+    }
 };
 
 class BinaryOperationNode : public ExpressionNode
@@ -58,6 +79,26 @@ public:
     std::unique_ptr<ExpressionNode> left;
     std::unique_ptr<ExpressionNode> right;
     OPERATOR oper;
+
+    void print(int indent) const override
+    {
+        std::cout << '[';
+        left->print(indent);
+        std::cout << " " << Stringify::oper(oper) << " ";
+        right->print(indent);
+        std::cout << ']';
+    }
+};
+
+class IdentifierNode : public ExpressionNode
+{
+public:
+    std::string identifier;
+
+    void print(int indent) const override
+    {
+        std::cout << '[' << identifier << ']';
+    }
 };
 
 class InstructionNode : public ASTNode
@@ -65,6 +106,17 @@ class InstructionNode : public ASTNode
 public:
     OP_CODE command;
     std::vector<std::unique_ptr<ExpressionNode>> operands;
+
+    void print(int indent) const override
+    {
+        std::cout << "INSTRUCTION:" << std::endl;
+        std::cout << Stringify::opCode(command) << " ";
+        for (const auto& operand : operands)
+        {
+            operand->print(indent);
+        }
+        std::cout << std::endl;
+    }
 };
 
 class DataNode : public ASTNode
@@ -75,15 +127,18 @@ public:
     std::string stringValue;
     DIRECTIVE dataDirective;
 
-    void print() const override
+    void print(int indent) const override
     {
         std::cout << "DATA NODE" << std::endl;
-        std::cout << "Label: " << label << " " << "value: ";
+        std::cout << "Label: " << label << " " << "value: " << std::endl;
+
+        indent++;
+        
         if (dataDirective == DIRECTIVE::BYTE)
         {
             for (const auto& e : expressions)
             {
-                e->print();
+                e->print(indent);
                 std::cout << " ";
             }            
         }
@@ -101,12 +156,12 @@ class DataSectionNode : public ASTNode
 public:
     std::vector<std::unique_ptr<DataNode>> datas;
 
-    void print() const override
+    void print(int indent) const override
     {
         std::cout << "DATA SECTION" << std::endl;
         for (const auto& node : datas)
         {
-            node->print();
+            node->print(indent);
         }
     }
 };
@@ -114,12 +169,36 @@ public:
 class CodeSectionNode : public ASTNode
 {
 public:
-    std::vector<InstructionNode> instructions;
+    std::vector<std::unique_ptr<InstructionNode>> nodes;
+
+    void print(int indent) const override
+    {
+        std::cout << "CODE SECTION: " << std::endl;
+        for (const auto& instruction : nodes)
+        {
+            instruction->print(indent);
+        }
+    }
+};
+
+class EquItemNode : public ASTNode
+{
+public:
+    std::string identifier;
+    std::unique_ptr<ExpressionNode> expression;
+
+    void print(int indent) const override
+    {
+        std::cout << identifier << " ";
+        expression->print(indent);
+        std::cout << std::endl;
+    }
 };
 
 class EquSectionNode : public ASTNode
 {
 public:
+    std::vector<std::unique_ptr<EquItemNode>> nodes;
 };
 
 class ProgramNode : public ASTNode
@@ -127,18 +206,33 @@ class ProgramNode : public ASTNode
 public:
     std::vector<std::unique_ptr<CodeSectionNode>> codeNodes;
     std::vector<std::unique_ptr<DataSectionNode>> dataNodes;
+    std::unordered_map<std::string, std::unique_ptr<EquItemNode>> equSection; 
 
-    void print() const override
+    void print(int indent = 0) const override
     {
         std::cout << "PROGRAM" << std::endl;
+        indent++;
         for (const auto& node : codeNodes)
         {
-            node->print();
+            node->print(indent);
         }
         
         for (const auto& node : dataNodes)
         {
-            node->print();            
+            node->print(indent);
+        }
+
+        for (const auto& node : codeNodes)
+        {
+            node->print(indent);
+        }
+        
+        for (const auto& [name, value] : equSection)
+        {
+            std::cout << "EQU SECTION ITEM" << std::endl;
+            std::cout << "Identifier: " << name << " value: ";
+            value->print(indent);
+            std::cout << std::endl;
         }
     }
 };
@@ -159,6 +253,9 @@ private:
     
     std::unique_ptr<DataNode> parseDataNode();
     std::unique_ptr<ExpressionNode> parseExpression();
+    std::unique_ptr<ExpressionNode> parseTerm();
+    std::unique_ptr<EquItemNode> parseEquItem();
+    std::unique_ptr<InstructionNode> parseInstruction();
 
     bool check(TOKEN_TYPE type) const;
     bool check(DIRECTIVE type) const;

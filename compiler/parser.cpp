@@ -2,6 +2,7 @@
 #include "isa_helper.h"
 
 #include <cassert>
+#include <unordered_map>
 
 Parser::Parser(const std::vector<Token>& tokens, ErrorCollector& collector) noexcept
     : m_errorCollector(collector), m_tokens(tokens), m_pos(0)
@@ -12,6 +13,7 @@ Parser::Parser(const std::vector<Token>& tokens, ErrorCollector& collector) noex
 ProgramNode Parser::parse()
 {
     ProgramNode program;
+    
     while(m_pos < m_tokens.size())
     {
         if (auto section = parseCodeSection())
@@ -24,7 +26,18 @@ ProgramNode Parser::parse()
         }
         else if (auto section = parseEquSection())
         {
-            
+            for (auto& node : section->nodes)
+            {
+                if (program.equSection.find(node->identifier) == program.equSection.end())
+                {
+                    program.equSection[node->identifier] = std::move(node);   
+                }
+                else
+                {
+                    
+                    m_errorCollector.report(ErrorType::EQU_ITEM_DUPLICATION, node->line, node->column, { node->identifier });
+                }
+            }
         }
         else if (peek().type == TOKEN_TYPE::END_OF_FILE)
         {
@@ -145,9 +158,75 @@ const Token* Parser::expect(OPERATOR type)
     return &token;    
 }
 
+std::unique_ptr<ExpressionNode> Parser::parseTerm()
+{
+    std::unique_ptr<ExpressionNode> node;
+
+    const Token& token = peek();
+    if (match(TOKEN_TYPE::IDENTIFIER))
+    {
+        std::unique_ptr<IdentifierNode> identifier = std::make_unique<IdentifierNode>();
+        identifier->identifier = token.getString();
+        node = std::move(identifier);
+        return node;
+    }
+    else if (match(TOKEN_TYPE::INT) || match(TOKEN_TYPE::FLOAT))
+    {
+        std::unique_ptr<NumberNode> number = std::make_unique<NumberNode>();
+        number->value = token.type == TOKEN_TYPE::INT ? token.getInt() : token.getFloat();
+        node = std::move(number);
+        return node;
+    }
+    else if (match(OPERATOR::MINUS))
+    {
+        const Token& numberToken = peek();
+        if (match(TOKEN_TYPE::INT) || match(TOKEN_TYPE::FLOAT))
+        {
+            std::unique_ptr<NumberNode> number = std::make_unique<NumberNode>();
+            number->value = numberToken.type == TOKEN_TYPE::INT ? -numberToken.getInt() : -numberToken.getFloat();
+            node = std::move(number);
+
+            return node;
+        }
+    }
+
+    return nullptr;
+}
+
 std::unique_ptr<ExpressionNode> Parser::parseExpression()
 {
-    
+    std::unique_ptr<ExpressionNode> left;
+    if (auto node = parseTerm())
+    {
+        left = std::move(node);
+    }
+    else
+    {
+        return nullptr;
+    }
+
+    const Token& token = peek();
+    std::unique_ptr<BinaryOperationNode> binOp = std::make_unique<BinaryOperationNode>();
+    if (match(OPERATOR::PLUS) || match(OPERATOR::MINUS))
+    {
+        binOp->oper = token.getOperator();
+        binOp->left = std::move(left);
+    }
+    else
+    {
+        return left;
+    }
+
+    if (auto right = parseTerm(); right != nullptr)
+    {
+        binOp->right = std::move(right);
+        return binOp;
+    }
+    else
+    {
+        m_errorCollector.report(ErrorType::INVALID_EXPRESSION, token.line, token.column);   
+    }
+   
     return nullptr;
 }
 
@@ -156,6 +235,7 @@ std::unique_ptr<DataNode> Parser::parseDataNode()
     if (const auto label = expect(TOKEN_TYPE::LABEL_DEF))
     {
         std::unique_ptr<DataNode> node = std::make_unique<DataNode>();
+        const Token& typeToken = peek();
                 
         if (match(DIRECTIVE::STRING))
         {
@@ -169,7 +249,7 @@ std::unique_ptr<DataNode> Parser::parseDataNode()
                 return nullptr;
             }
         }
-        else if (match(DIRECTIVE::BYTE))
+        else if (match(DIRECTIVE::BYTE) || match(DIRECTIVE::WORD) || match(DIRECTIVE::DWORD) || match(DIRECTIVE::SHORT))
         {            
             while (true)
             {
@@ -187,15 +267,14 @@ std::unique_ptr<DataNode> Parser::parseDataNode()
             {
                 const Token& token = peek();
                 m_errorCollector.report(
-                    ErrorType::EXPECTED_BYTE_LITERAL,
+                    ErrorType::INVALID_EXPRESSION,
                     token.line,
-                    token.column,
-                    { std::string(Stringify::tokenValue(token)) }
+                    token.column
                 );
                 return nullptr;
             }
             
-            node->dataDirective = DIRECTIVE::BYTE;
+            node->dataDirective = typeToken.getDirective();
         }
         else
         {
@@ -253,12 +332,96 @@ std::unique_ptr<DataSectionNode> Parser::parseDataSection()
     return section;    
 }
 
+std::unique_ptr<InstructionNode> Parser::parseInstruction()
+{
+    const Token& token = peek();
+    if (match(TOKEN_TYPE::INSTRUCTION))
+    {
+        std::unique_ptr<InstructionNode> node = std::make_unique<InstructionNode>();
+        node->command = token.getOpCode();
+        while (true)
+        {
+            if (auto expression = parseExpression())
+            {
+                node->operands.push_back(std::move(expression));
+            }
+            else
+            {
+                break;
+            }
+        }
+
+        return node;
+    }
+    return nullptr;
+}
+
 std::unique_ptr<CodeSectionNode> Parser::parseCodeSection()
 {
+    if (match(DIRECTIVE::CODE))
+    {
+        std::unique_ptr<CodeSectionNode> codeSection = std::make_unique<CodeSectionNode>();
+        while (true)
+        {
+            if (auto instruction = parseInstruction())
+            {
+                codeSection->nodes.push_back(std::move(instruction));
+            }
+            else
+            {
+                break;
+            }
+        }
+
+        return codeSection;
+    }
+    
+    return nullptr;
+}
+
+std::unique_ptr<EquItemNode> Parser::parseEquItem()
+{
+    const Token& identifier = peek();
+    if (match(TOKEN_TYPE::IDENTIFIER))
+    {
+        const Token& token = peek();
+        if (auto expression = parseExpression())
+        {
+            auto node = std::make_unique<EquItemNode>();
+            node->identifier = identifier.getString();
+            node->expression = std::move(expression);
+            node->line = token.line;
+            node->column = token.column;
+            return node;
+        }
+        else
+        {
+            m_errorCollector.report(ErrorType::INVALID_EXPRESSION, token.line, token.column);
+        }
+    }
+
     return nullptr;
 }
 
 std::unique_ptr<EquSectionNode> Parser::parseEquSection()
 {
+    if (match(DIRECTIVE::EQU))
+    {
+        std::unique_ptr<EquSectionNode> equSection = std::make_unique<EquSectionNode>();
+        while (true)
+        {
+            if (auto item = parseEquItem())
+            {
+                equSection->nodes.push_back(std::move(item));
+            }
+            else
+            {
+                break;
+            }
+        }
+        
+        return equSection;
+    }
+
     return nullptr;
 }
