@@ -42,11 +42,36 @@ struct Token
 class Lexer
 {
 public:
-    explicit Lexer(ErrorCollector& errorCollector) noexcept;
-    
-    std::vector<Token> tokenize(const std::string& source) const;
-    
+    explicit Lexer(ErrorCollector& errorCollector, std::string_view source) noexcept;
+
+    std::vector<Token> tokenize();
+
 private:
+    void skipWhitespace();
+    std::optional<Token> readString();
+    std::optional<Token> readNext();
+
+    std::optional<Token> tryParseMark(std::string_view value) const;
+    std::optional<Token> tryParseDirective(std::string_view value) const;
+    std::optional<Token> tryParseOpCode(std::string_view value) const;
+    std::optional<Token> tryParseOperator(std::string_view value) const;
+    std::optional<Token> tryParseNumber(std::string_view value) const;
+    std::optional<Token> tryParseIdentifier(std::string_view value) const;
+
+    std::string getUpperCase(std::string_view value) const;
+    std::string_view getCurrentSubstring() const;
+    char peek() const;
+    char advance();
+
+private:
+    size_t m_pos = 0;
+    size_t m_previous = 0;
+    size_t m_tokenStartLine = 1;
+    size_t m_tokenStartColumn = 1;
+    size_t m_line = 1;
+    size_t m_column = 1;
+    
+    std::string_view m_source;
     ErrorCollector& m_errorCollector;
 };
 

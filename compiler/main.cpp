@@ -27,8 +27,8 @@ int main(int argc, char** argv)
     file.read(source.data(), size);
     
     ErrorCollector errors(filename);
-    Lexer lexer(errors);
-    auto tokens = lexer.tokenize(source);
+    Lexer lexer(errors, source);
+    auto tokens = lexer.tokenize();
 
     if (errors.hasError())
     {

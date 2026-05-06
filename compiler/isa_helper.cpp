@@ -197,11 +197,11 @@ namespace Convert
     std::optional<DIRECTIVE> directive(std::string_view str)
     {
         static const std::unordered_map<std::string_view, DIRECTIVE> table = {
-            { "DATA",  DIRECTIVE::DATA   },
-            { "CODE",  DIRECTIVE::CODE   },
-            { "BYTES", DIRECTIVE::BYTES  },
-            { "BYTES", DIRECTIVE::STRING },
-            { "EQU",   DIRECTIVE::EQU    },
+            { "DATA",   DIRECTIVE::DATA   },
+            { "CODE",   DIRECTIVE::CODE   },
+            { "BYTES",  DIRECTIVE::BYTES  },
+            { "STRING", DIRECTIVE::STRING },
+            { "EQU",    DIRECTIVE::EQU    },
         };
 
         if (auto it = table.find(str); it != table.end())

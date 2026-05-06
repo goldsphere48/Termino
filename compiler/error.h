@@ -22,6 +22,7 @@ enum class ErrorType
     BYTE_LITERAL_OVERFLOW,
     EXPECTED_BYTE_LITERAL,
     UNRECOGNIZED_TOKEN,
+    UNEXPECTED_END_OF_STRING,
 };
 
 class ErrorMessage

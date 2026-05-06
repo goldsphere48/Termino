@@ -34,6 +34,8 @@ std::string errorTemplate(ErrorType type)
         return "Unexpected operator {}, expected {}";
     case ErrorType::EXPECTED_BYTE_LITERAL:
         return "Expected byte literal, got {}";
+    case ErrorType::UNEXPECTED_END_OF_STRING:
+        return "Unexpected end of string literal";
     }
 
     return "Unknown error";
