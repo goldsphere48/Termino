@@ -1,16 +1,16 @@
 .data
 
 counter:
-.bytes 0
+.byte 0
 
 pixel_x:
-.bytes 0
+.byte 0
 
 pixel_y:
-.bytes 0
+.byte 0
 
 sprite_id:
-.bytes 0
+.byte 0
 
 .code
 

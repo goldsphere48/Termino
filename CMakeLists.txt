@@ -5,5 +5,3 @@ project(Termino
 )
 
 add_subdirectory(compiler)
-add_subdirectory(vm)
-add_subdirectory(emulator)
