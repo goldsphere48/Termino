@@ -41,12 +41,12 @@ private:
 };
 
 enum class TOKEN_TYPE;
-class Token;
+struct Token;
 
 class ErrorCollector
 {
 public:
-    ErrorCollector(const std::string& filename);
+    ErrorCollector(const std::string& filename, bool immidiate = false);
 
     void reportUnexpectedToken(TOKEN_TYPE expected, const Token& token);
     void reportUnexpectedDirective(DIRECTIVE expected, DIRECTIVE actual, const Token& token);
@@ -60,4 +60,5 @@ public:
 private:
     std::vector<ErrorMessage> m_errors;
     std::string m_filename;
+    bool m_immidiate;
 };

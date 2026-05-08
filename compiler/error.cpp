@@ -72,15 +72,23 @@ std::string ErrorMessage::format(const std::string& filename) const
     return std::format("{}:{}:{}: error: {}", filename, m_line, m_column, templ);
 }
 
-ErrorCollector::ErrorCollector(const std::string& filename)
-    : m_filename(filename)
+ErrorCollector::ErrorCollector(const std::string& filename, bool immidiate)
+    : m_filename(filename), m_immidiate(immidiate)
 {
     
 }
 
 void ErrorCollector::report(ErrorType errorType, int line, int column, std::initializer_list<std::string> args)
 {
-    m_errors.emplace_back(errorType, line, column, args);
+    if (m_immidiate)
+    {
+        ErrorMessage msg = ErrorMessage(errorType, line, column, args);
+        std::cout << msg.format(m_filename) << std::endl;
+    }
+    else
+    {
+        m_errors.emplace_back(errorType, line, column, args);
+    }
 }
 
 void ErrorCollector::reportUnexpectedToken(TOKEN_TYPE expected, const Token& token)

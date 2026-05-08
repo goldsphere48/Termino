@@ -4,7 +4,7 @@
 
 #include <string>
 
-class Token;
+struct Token;
 
 namespace Stringify
 {

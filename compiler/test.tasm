@@ -3,11 +3,13 @@
         .byte ghghg + 0x23 14 85 90 + 86 gjgjg
 
 .equ
-    X 10
-    z dfdf
-    Y 121
+    X: 10
+    z: dfdf
+    Y: 121
 
 .code
-PUSH8 8 + X -67
+PUSH8 8
+loop:
 POP
+JMP loop
 SYS_CLEAR

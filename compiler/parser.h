@@ -3,7 +3,6 @@
 #include "lexer.h"
 
 #include <memory>
-#include <iostream>
 #include <unordered_map>
 
 #include "isa_helper.h"
@@ -12,27 +11,28 @@
 GRAMMAR
 program ::= (data_section | equ_section | code_section)*
 
-code_section ::= ".code" instruction+
-data_section ::= ".data" data_item+
-equ_section  ::= ".equ" equ_item+
+code_section ::= ".code" (label_def | instruction)*
+data_section ::= ".data" data_item*
+equ_section  ::= ".equ"  equ_item*
 
 binary_operator ::= "-" | "+"
 unary_operator  ::= "-"
 
-int_literal   ::= UNSIGNED_INT | unary_operator UNSIGNED_INT
+int_literal   ::= UNSIGNED_INT   | unary_operator UNSIGNED_INT
 float_literal ::= UNSIGNED_FLOAT | unary_operator UNSIGNED_FLOAT
 number        ::= int_literal | float_literal
-literal       ::= number | STRING_LITERAL
 
-equ_item ::= IDENTIFIER literal
+label_def ::= LABEL_DEF
+equ_item  ::= LABEL_DEF expression
 
 data_item      ::= LABEL_DEF data_directive
-data_directive ::= ".bytes" int_literal+ | ".string" STRING_LITERAL
+data_directive ::= (".byte" | ".short" | ".word" | ".dword") expression+
+                 | ".string" STRING_LITERAL
 
 instruction ::= COMMAND operand*
 term        ::= number | IDENTIFIER
-const_eval_expression ::= term (binary_operator term)*
-operand ::= const_eval_expression | term
+expression  ::= term (binary_operator term)?  // TODO: должно быть `*`, см. TODO.md
+operand     ::= expression
 */
 
 class ASTNode
@@ -40,7 +40,7 @@ class ASTNode
 public:
     virtual ~ASTNode() = default;
 
-    virtual void print(int indent) const { };
+    virtual void print(int indent) const = 0;
 
     size_t line;
     size_t column;
@@ -49,7 +49,7 @@ public:
 class ExpressionNode : public ASTNode
 {
 public:
-    
+    std::optional<OPERATOR> unarOperator;
 };
 
 class NumberNode : public ExpressionNode
@@ -57,20 +57,7 @@ class NumberNode : public ExpressionNode
 public:
     std::variant<int, float> value;
 
-    void print(int indent) const override
-    {
-        std::visit([](auto&& v) {
-            using T = std::decay_t<decltype(v)>;
-            if constexpr (std::is_same_v<T, int>)
-            {
-                std::cout << '[' << v << ']';
-            }
-            if constexpr (std::is_same_v<T, float>)
-            {
-                std::cout << '[' << v << ']';
-            }
-        }, value);
-    }
+    void print(int indent) const override;
 };
 
 class BinaryOperationNode : public ExpressionNode
@@ -80,14 +67,7 @@ public:
     std::unique_ptr<ExpressionNode> right;
     OPERATOR oper;
 
-    void print(int indent) const override
-    {
-        std::cout << '[';
-        left->print(indent);
-        std::cout << " " << Stringify::oper(oper) << " ";
-        right->print(indent);
-        std::cout << ']';
-    }
+    void print(int indent) const override;
 };
 
 class IdentifierNode : public ExpressionNode
@@ -95,28 +75,30 @@ class IdentifierNode : public ExpressionNode
 public:
     std::string identifier;
 
-    void print(int indent) const override
-    {
-        std::cout << '[' << identifier << ']';
-    }
+    void print(int indent) const override;
 };
 
-class InstructionNode : public ASTNode
+class CodeStatementNode : public ASTNode
+{
+public:
+    
+};
+
+class InstructionNode : public CodeStatementNode
 {
 public:
     OP_CODE command;
     std::vector<std::unique_ptr<ExpressionNode>> operands;
 
-    void print(int indent) const override
-    {
-        std::cout << "INSTRUCTION:" << std::endl;
-        std::cout << Stringify::opCode(command) << " ";
-        for (const auto& operand : operands)
-        {
-            operand->print(indent);
-        }
-        std::cout << std::endl;
-    }
+    void print(int indent) const override;
+};
+
+class LabelDefNode : public CodeStatementNode
+{
+public:
+    std::string identifier;
+
+    void print(int indent) const override;
 };
 
 class DataNode : public ASTNode
@@ -127,28 +109,7 @@ public:
     std::string stringValue;
     DIRECTIVE dataDirective;
 
-    void print(int indent) const override
-    {
-        std::cout << "DATA NODE" << std::endl;
-        std::cout << "Label: " << label << " " << "value: " << std::endl;
-
-        indent++;
-        
-        if (dataDirective == DIRECTIVE::BYTE)
-        {
-            for (const auto& e : expressions)
-            {
-                e->print(indent);
-                std::cout << " ";
-            }            
-        }
-        else if (dataDirective == DIRECTIVE::STRING)
-        {
-            std::cout << stringValue;
-        }
-            
-        std::cout << std::endl;
-    }
+    void print(int indent) const override;
 };
 
 class DataSectionNode : public ASTNode
@@ -156,29 +117,15 @@ class DataSectionNode : public ASTNode
 public:
     std::vector<std::unique_ptr<DataNode>> datas;
 
-    void print(int indent) const override
-    {
-        std::cout << "DATA SECTION" << std::endl;
-        for (const auto& node : datas)
-        {
-            node->print(indent);
-        }
-    }
+    void print(int indent) const override;
 };
 
 class CodeSectionNode : public ASTNode
 {
 public:
-    std::vector<std::unique_ptr<InstructionNode>> nodes;
+    std::vector<std::unique_ptr<CodeStatementNode>> nodes;
 
-    void print(int indent) const override
-    {
-        std::cout << "CODE SECTION: " << std::endl;
-        for (const auto& instruction : nodes)
-        {
-            instruction->print(indent);
-        }
-    }
+    void print(int indent) const override;
 };
 
 class EquItemNode : public ASTNode
@@ -187,54 +134,24 @@ public:
     std::string identifier;
     std::unique_ptr<ExpressionNode> expression;
 
-    void print(int indent) const override
-    {
-        std::cout << identifier << " ";
-        expression->print(indent);
-        std::cout << std::endl;
-    }
+    void print(int indent) const override;
 };
 
 class EquSectionNode : public ASTNode
 {
 public:
     std::vector<std::unique_ptr<EquItemNode>> nodes;
+
+    void print(int indent) const override;
 };
 
 class ProgramNode : public ASTNode
 {
 public:
-    std::vector<std::unique_ptr<CodeSectionNode>> codeNodes;
-    std::vector<std::unique_ptr<DataSectionNode>> dataNodes;
+    std::vector<std::unique_ptr<ASTNode>> nodes;
     std::unordered_map<std::string, std::unique_ptr<EquItemNode>> equSection; 
 
-    void print(int indent = 0) const override
-    {
-        std::cout << "PROGRAM" << std::endl;
-        indent++;
-        for (const auto& node : codeNodes)
-        {
-            node->print(indent);
-        }
-        
-        for (const auto& node : dataNodes)
-        {
-            node->print(indent);
-        }
-
-        for (const auto& node : codeNodes)
-        {
-            node->print(indent);
-        }
-        
-        for (const auto& [name, value] : equSection)
-        {
-            std::cout << "EQU SECTION ITEM" << std::endl;
-            std::cout << "Identifier: " << name << " value: ";
-            value->print(indent);
-            std::cout << std::endl;
-        }
-    }
+    void print(int indent = 0) const override;
 };
 
 class Parser
@@ -254,20 +171,39 @@ private:
     std::unique_ptr<DataNode> parseDataNode();
     std::unique_ptr<ExpressionNode> parseExpression();
     std::unique_ptr<ExpressionNode> parseTerm();
+    std::unique_ptr<ExpressionNode> parseUnmodifiedTerm();
     std::unique_ptr<EquItemNode> parseEquItem();
     std::unique_ptr<InstructionNode> parseInstruction();
+    std::unique_ptr<LabelDefNode> parseLabelDef();
 
     bool check(TOKEN_TYPE type) const;
     bool check(DIRECTIVE type) const;
     bool check(OPERATOR type) const;
 
-    bool match(TOKEN_TYPE type);
-    bool match(DIRECTIVE type);
-    bool match(OPERATOR type);
+    template<typename T>
+    bool match(T type)
+    {
+        if (check(type))
+        {
+            advance();
+            return true;
+        }
+
+        return false;
+    }
 
     const Token* expect(TOKEN_TYPE type);
     const Token* expect(DIRECTIVE type);
     const Token* expect(OPERATOR type);
+
+    void recoverLast();
+    void recoverTo(size_t pos);
+
+    bool atSectionBoundary() const;
+    
+    void syncToInstructionStart();
+    void syncToDataNodeStart();
+    void syncToEquItemStart();
     
 private:
     ErrorCollector& m_errorCollector;

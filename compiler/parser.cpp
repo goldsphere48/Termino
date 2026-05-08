@@ -12,17 +12,17 @@ Parser::Parser(const std::vector<Token>& tokens, ErrorCollector& collector) noex
 
 ProgramNode Parser::parse()
 {
-    ProgramNode program;
+    ProgramNode program = { };
     
     while(m_pos < m_tokens.size())
     {
         if (auto section = parseCodeSection())
         {
-            program.codeNodes.push_back(std::move(section));
+            program.nodes.push_back(std::move(section));
         }
         else if (auto section = parseDataSection())
         {
-            program.dataNodes.push_back(std::move(section));            
+            program.nodes.push_back(std::move(section));            
         }
         else if (auto section = parseEquSection())
         {
@@ -45,9 +45,8 @@ ProgramNode Parser::parse()
         }
         else
         {
-            const Token& token = advance();
-            m_errorCollector.reportUnrecognizedToken(token);
-            return program;
+            m_errorCollector.reportUnrecognizedToken(peek());
+            advance();
         }
     }
     
@@ -85,48 +84,22 @@ bool Parser::check(OPERATOR type) const
     return peek().hasOperator() && peek().getOperator() == type;    
 }
 
-bool Parser::match(TOKEN_TYPE type)
-{
-    if (check(type)) {
-        advance();
-        return true;
-    }
-    return false;
-}
-
-bool Parser::match(DIRECTIVE type)
-{
-    if (check(type)) {
-        advance();
-        return true;
-    }
-    return false;
-}
-
-bool Parser::match(OPERATOR type)
-{
-    if (check(type)) {
-        advance();
-        return true;
-    }
-    return false;
-}
-
 const Token* Parser::expect(TOKEN_TYPE type)
 {
-    const Token& token = advance();
+    const Token& token = peek();
     if (token.type != type)
     {
         m_errorCollector.reportUnexpectedToken(type, token);
         return nullptr;
     }
 
+    advance();
     return &token;
 }
 
 const Token* Parser::expect(DIRECTIVE type)
 {
-    const Token& token = advance();
+    const Token& token = peek();
     if (token.type != TOKEN_TYPE::DIRECTIVE || !token.hasDirective())
     {
         m_errorCollector.reportUnexpectedToken(TOKEN_TYPE::DIRECTIVE, token);
@@ -138,12 +111,13 @@ const Token* Parser::expect(DIRECTIVE type)
         return nullptr;        
     }
 
+    advance();
     return &token;
 }
 
 const Token* Parser::expect(OPERATOR type)
 {
-    const Token& token = advance();
+    const Token& token = peek();
     if (token.type != TOKEN_TYPE::OPERATOR || !token.hasOperator())
     {
         m_errorCollector.reportUnexpectedToken(TOKEN_TYPE::OPERATOR, token);
@@ -154,39 +128,126 @@ const Token* Parser::expect(OPERATOR type)
         m_errorCollector.reportUnexpectedOperator(type, oper, token);
         return nullptr;
     }
-    
+
+    advance();
     return &token;    
+}
+
+void Parser::recoverLast()
+{
+    assert(m_pos - 1 >= 0);
+    m_pos--;
+}
+
+void Parser::recoverTo(size_t pos)
+{
+    assert(m_pos - pos >= 0);
+    m_pos = pos;
+}
+
+bool Parser::atSectionBoundary() const
+{
+    const Token& token = peek();
+
+    if (token.type == TOKEN_TYPE::END_OF_FILE)
+    {
+        return true;
+    }
+    
+    if (token.type != TOKEN_TYPE::DIRECTIVE)
+    {
+        return false;
+    }
+
+    const DIRECTIVE directive = token.getDirective();
+    
+    return
+        directive == DIRECTIVE::CODE ||
+        directive == DIRECTIVE::DATA ||
+        directive == DIRECTIVE::EQU;
+}
+    
+void Parser::syncToInstructionStart()
+{
+    while(peek().type != TOKEN_TYPE::END_OF_FILE)
+    {
+        TOKEN_TYPE type = peek().type;
+        if (type == TOKEN_TYPE::INSTRUCTION) return;
+        if (type == TOKEN_TYPE::LABEL_DEF) return;
+        if (atSectionBoundary()) return;
+        advance();
+    }
+}
+
+void Parser::syncToDataNodeStart()
+{
+    while(peek().type != TOKEN_TYPE::END_OF_FILE)
+    {
+        TOKEN_TYPE type = peek().type;
+        if (type == TOKEN_TYPE::LABEL_DEF) return;
+        if (atSectionBoundary()) return;
+        advance();
+    }
+}
+
+void Parser::syncToEquItemStart()
+{
+    while(peek().type != TOKEN_TYPE::END_OF_FILE)
+    {
+        TOKEN_TYPE type = peek().type;
+        if (type == TOKEN_TYPE::LABEL_DEF) return;
+        if (atSectionBoundary()) return;
+        advance();
+    }
+}
+
+std::unique_ptr<ExpressionNode> Parser::parseUnmodifiedTerm()
+{
+    std::unique_ptr<ExpressionNode> node;
+    const Token& token = peek();
+    if (match(TOKEN_TYPE::INT) || match(TOKEN_TYPE::FLOAT))
+    {
+        std::unique_ptr<NumberNode> number = std::make_unique<NumberNode>();
+        number->value = token.type == TOKEN_TYPE::INT ? token.getInt() : token.getFloat();
+        node = std::move(number);
+        node->line = token.line;
+        node->column = token.column;
+        return node;
+    }
+    else if (match(TOKEN_TYPE::IDENTIFIER))
+    {
+        std::unique_ptr<IdentifierNode> identifier = std::make_unique<IdentifierNode>();
+        identifier->identifier = token.getString();
+        node = std::move(identifier);
+        node->line = token.line;
+        node->column = token.column;
+        return node;
+    }
+
+    return nullptr;
 }
 
 std::unique_ptr<ExpressionNode> Parser::parseTerm()
 {
     std::unique_ptr<ExpressionNode> node;
-
     const Token& token = peek();
-    if (match(TOKEN_TYPE::IDENTIFIER))
+
+    if (auto term = parseUnmodifiedTerm())
     {
-        std::unique_ptr<IdentifierNode> identifier = std::make_unique<IdentifierNode>();
-        identifier->identifier = token.getString();
-        node = std::move(identifier);
-        return node;
-    }
-    else if (match(TOKEN_TYPE::INT) || match(TOKEN_TYPE::FLOAT))
-    {
-        std::unique_ptr<NumberNode> number = std::make_unique<NumberNode>();
-        number->value = token.type == TOKEN_TYPE::INT ? token.getInt() : token.getFloat();
-        node = std::move(number);
+        node = std::move(term);
         return node;
     }
     else if (match(OPERATOR::MINUS))
     {
-        const Token& numberToken = peek();
-        if (match(TOKEN_TYPE::INT) || match(TOKEN_TYPE::FLOAT))
+        if (auto term = parseUnmodifiedTerm())
         {
-            std::unique_ptr<NumberNode> number = std::make_unique<NumberNode>();
-            number->value = numberToken.type == TOKEN_TYPE::INT ? -numberToken.getInt() : -numberToken.getFloat();
-            node = std::move(number);
-
+            node = std::move(term);
+            node->unarOperator = OPERATOR::MINUS;
             return node;
+        }
+        else
+        {
+            m_errorCollector.report(ErrorType::INVALID_EXPRESSION, token.line, token.column, { Stringify::tokenValue(token) });
         }
     }
 
@@ -206,37 +267,40 @@ std::unique_ptr<ExpressionNode> Parser::parseExpression()
     }
 
     const Token& token = peek();
-    std::unique_ptr<BinaryOperationNode> binOp = std::make_unique<BinaryOperationNode>();
     if (match(OPERATOR::PLUS) || match(OPERATOR::MINUS))
     {
-        binOp->oper = token.getOperator();
-        binOp->left = std::move(left);
-    }
-    else
-    {
-        return left;
+        if (auto right = parseTerm(); right != nullptr)
+        {
+            std::unique_ptr<BinaryOperationNode> binOp = std::make_unique<BinaryOperationNode>();
+            binOp->oper = token.getOperator();
+            binOp->left = std::move(left);
+            binOp->right = std::move(right);
+        
+            binOp->line = token.line;
+            binOp->column = token.column;
+            
+            return binOp;
+        }
+        else
+        {
+            m_errorCollector.report(ErrorType::INVALID_EXPRESSION, token.line, token.column);
+            return left;
+        }
     }
 
-    if (auto right = parseTerm(); right != nullptr)
-    {
-        binOp->right = std::move(right);
-        return binOp;
-    }
-    else
-    {
-        m_errorCollector.report(ErrorType::INVALID_EXPRESSION, token.line, token.column);   
-    }
-   
-    return nullptr;
+    return left;
 }
 
 std::unique_ptr<DataNode> Parser::parseDataNode()
 {
-    if (const auto label = expect(TOKEN_TYPE::LABEL_DEF))
+    const Token& label = peek();
+    if (match(TOKEN_TYPE::LABEL_DEF))
     {
         std::unique_ptr<DataNode> node = std::make_unique<DataNode>();
         const Token& typeToken = peek();
-                
+        node->line = typeToken.line;
+        node->column = typeToken.column;
+        
         if (match(DIRECTIVE::STRING))
         {
             if (const Token* strToken = expect(TOKEN_TYPE::STRING))
@@ -291,7 +355,7 @@ std::unique_ptr<DataNode> Parser::parseDataNode()
             return nullptr;
         }
 
-        node->label = label->getString();
+        node->label = label.getString();
         return node;
     }
     else
@@ -302,25 +366,27 @@ std::unique_ptr<DataNode> Parser::parseDataNode()
 
 std::unique_ptr<DataSectionNode> Parser::parseDataSection()
 {
+    const Token& token = peek();
     std::unique_ptr<DataSectionNode> section = std::make_unique<DataSectionNode>();
     if (match(DIRECTIVE::DATA))
     {
-        while (true)
+        section->line = token.line;
+        section->column = token.column;
+        
+        while (!atSectionBoundary())
         {
-            if (check(TOKEN_TYPE::LABEL_DEF))
+            size_t before = m_pos;
+            if (auto dataNode = parseDataNode())
             {
-                if (auto dataNode = parseDataNode())
-                {
-                    section->datas.push_back(std::move(dataNode));       
-                }
-                else
-                {
-                    return nullptr;
-                }
+                section->datas.push_back(std::move(dataNode));       
             }
             else
             {
-                break;
+                if (m_pos == before)
+                {
+                    m_errorCollector.reportUnrecognizedToken(peek());
+                }
+                syncToDataNodeStart();
             }
         }
     }
@@ -332,6 +398,21 @@ std::unique_ptr<DataSectionNode> Parser::parseDataSection()
     return section;    
 }
 
+std::unique_ptr<LabelDefNode> Parser::parseLabelDef()
+{
+    const Token& token = peek();
+    if (match(TOKEN_TYPE::LABEL_DEF))
+    {
+        std::unique_ptr<LabelDefNode> labelNode = std::make_unique<LabelDefNode>();
+        labelNode->identifier = token.getString();
+        labelNode->line = token.line;
+        labelNode->column = token.column;
+        return labelNode;
+    }
+
+    return nullptr;
+}
+
 std::unique_ptr<InstructionNode> Parser::parseInstruction()
 {
     const Token& token = peek();
@@ -339,6 +420,9 @@ std::unique_ptr<InstructionNode> Parser::parseInstruction()
     {
         std::unique_ptr<InstructionNode> node = std::make_unique<InstructionNode>();
         node->command = token.getOpCode();
+        node->line = token.line;
+        node->column = token.column;
+        
         while (true)
         {
             if (auto expression = parseExpression())
@@ -353,23 +437,37 @@ std::unique_ptr<InstructionNode> Parser::parseInstruction()
 
         return node;
     }
+
     return nullptr;
 }
 
 std::unique_ptr<CodeSectionNode> Parser::parseCodeSection()
 {
+    const Token& token = peek();
     if (match(DIRECTIVE::CODE))
     {
         std::unique_ptr<CodeSectionNode> codeSection = std::make_unique<CodeSectionNode>();
-        while (true)
+        codeSection->line = token.line;
+        codeSection->column = token.column;
+        
+        while (!atSectionBoundary())
         {
-            if (auto instruction = parseInstruction())
+            size_t before = m_pos;
+            if (auto labelDef = parseLabelDef())
+            {
+                codeSection->nodes.push_back(std::move(labelDef));
+            }
+            else if (auto instruction = parseInstruction())
             {
                 codeSection->nodes.push_back(std::move(instruction));
             }
             else
             {
-                break;
+                if (m_pos == before)
+                {
+                    m_errorCollector.reportUnrecognizedToken(peek());
+                }
+                syncToInstructionStart();
             }
         }
 
@@ -382,7 +480,7 @@ std::unique_ptr<CodeSectionNode> Parser::parseCodeSection()
 std::unique_ptr<EquItemNode> Parser::parseEquItem()
 {
     const Token& identifier = peek();
-    if (match(TOKEN_TYPE::IDENTIFIER))
+    if (match(TOKEN_TYPE::LABEL_DEF))
     {
         const Token& token = peek();
         if (auto expression = parseExpression())
@@ -405,18 +503,27 @@ std::unique_ptr<EquItemNode> Parser::parseEquItem()
 
 std::unique_ptr<EquSectionNode> Parser::parseEquSection()
 {
+    const Token& token = peek();
     if (match(DIRECTIVE::EQU))
     {
         std::unique_ptr<EquSectionNode> equSection = std::make_unique<EquSectionNode>();
-        while (true)
+        equSection->line = token.line;
+        equSection->column = token.column;
+        
+        while (!atSectionBoundary())
         {
+            size_t before = m_pos;
             if (auto item = parseEquItem())
             {
                 equSection->nodes.push_back(std::move(item));
             }
             else
             {
-                break;
+                if (m_pos == before)
+                {
+                    m_errorCollector.reportUnrecognizedToken(peek());
+                }
+                syncToEquItemStart();
             }
         }
         
