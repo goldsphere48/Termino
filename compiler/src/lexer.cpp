@@ -13,7 +13,8 @@ bool IsOperator(char symbol)
 {
     return
         symbol == '-' ||
-        symbol == '+';
+        symbol == '+' ||
+        symbol == ',';
 }
 
 bool IsLetter(char symbol)

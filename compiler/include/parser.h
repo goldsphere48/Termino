@@ -170,6 +170,7 @@ private:
     
     std::unique_ptr<DataNode> parseDataNode();
     std::unique_ptr<ExpressionNode> parseExpression();
+    std::vector<std::unique_ptr<ExpressionNode>> parseExpressionsList();
     std::unique_ptr<ExpressionNode> parseTerm();
     std::unique_ptr<ExpressionNode> parseUnmodifiedTerm();
     std::unique_ptr<EquItemNode> parseEquItem();

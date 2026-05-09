@@ -1,6 +1,6 @@
 .data
     sprite:
-        .byte ghghg + 0x23 14 85 90 + 86 gjgjg
+        .byte ghghg + 0x23, 14, 85, 90 + 86, gjgjg
 
 .equ
     X: 10

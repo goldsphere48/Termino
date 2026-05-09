@@ -25,6 +25,7 @@ enum class ErrorType
     UNEXPECTED_END_OF_STRING,
     INVALID_EXPRESSION,
     EQU_ITEM_DUPLICATION,
+    WAIT_EXPRESSION,
 };
 
 class ErrorMessage

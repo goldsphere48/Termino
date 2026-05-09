@@ -38,6 +38,8 @@ std::string errorTemplate(ErrorType type)
         return "Unexpected end of string literal";
     case ErrorType::INVALID_EXPRESSION:
         return "Invalid expression";
+    case ErrorType::WAIT_EXPRESSION:
+        return "Wait expression, got {}";
     case ErrorType::EQU_ITEM_DUPLICATION:
         return "Duplication of definition {}";
 

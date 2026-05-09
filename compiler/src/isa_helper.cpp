@@ -87,8 +87,9 @@ namespace Stringify
     {
         switch (type)
         {
-        case OPERATOR::MINUS:   return "MINUS";
-        case OPERATOR::PLUS:    return "PLUS";
+        case OPERATOR::MINUS: return "MINUS";
+        case OPERATOR::PLUS:  return "PLUS";
+        case OPERATOR::COMMA: return "COMMA";
         }
 
         return "?";
@@ -223,8 +224,9 @@ namespace Convert
     std::optional<OPERATOR> oper(std::string_view str)
     {
         static const std::unordered_map<std::string_view, OPERATOR> table = {
-            { "-", OPERATOR::MINUS   },
-            { "+", OPERATOR::PLUS    },
+            { "-", OPERATOR::MINUS },
+            { "+", OPERATOR::PLUS  },
+            { ",", OPERATOR::COMMA  },
         };
 
         if (auto it = table.find(str); it != table.end())

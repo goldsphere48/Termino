@@ -34,7 +34,6 @@ ProgramNode Parser::parse()
                 }
                 else
                 {
-                    
                     m_errorCollector.report(ErrorType::EQU_ITEM_DUPLICATION, node->line, node->column, { node->identifier });
                 }
             }
@@ -291,6 +290,38 @@ std::unique_ptr<ExpressionNode> Parser::parseExpression()
     return left;
 }
 
+std::vector<std::unique_ptr<ExpressionNode>> Parser::parseExpressionsList()
+{
+    std::vector<std::unique_ptr<ExpressionNode>> expressions;
+    bool waitForExpression = false;
+    while (true)
+    {
+        if (auto expression = parseExpression())
+        {
+            expressions.push_back(std::move(expression));
+            waitForExpression = false;
+        }
+        else
+        {
+            const Token& token = peek();
+            
+            if (waitForExpression)
+            {
+                m_errorCollector.report(ErrorType::WAIT_EXPRESSION, token.line, token.column, { Stringify::tokenValue(token) });
+            }
+
+
+            if (!match(OPERATOR::COMMA))
+            {
+                break;
+            }
+            
+            waitForExpression = true;
+        }
+    }
+    return expressions;
+}
+
 std::unique_ptr<DataNode> Parser::parseDataNode()
 {
     const Token& label = peek();
@@ -315,18 +346,8 @@ std::unique_ptr<DataNode> Parser::parseDataNode()
         }
         else if (match(DIRECTIVE::BYTE) || match(DIRECTIVE::WORD) || match(DIRECTIVE::DWORD) || match(DIRECTIVE::SHORT))
         {            
-            while (true)
-            {
-                if (auto expression = parseExpression())
-                {
-                    node->expressions.push_back(std::move(expression));
-                }
-                else
-                {
-                    break;
-                }
-            }
-
+            node->expressions = parseExpressionsList();
+            
             if (node->expressions.empty())
             {
                 const Token& token = peek();
@@ -423,18 +444,8 @@ std::unique_ptr<InstructionNode> Parser::parseInstruction()
         node->line = token.line;
         node->column = token.column;
         
-        while (true)
-        {
-            if (auto expression = parseExpression())
-            {
-                node->operands.push_back(std::move(expression));
-            }
-            else
-            {
-                break;
-            }
-        }
-
+        node->operands = parseExpressionsList();
+        
         return node;
     }
 
