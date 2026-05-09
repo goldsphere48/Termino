@@ -268,7 +268,7 @@ std::unique_ptr<ExpressionNode> Parser::parseExpression()
     const Token& token = peek();
     if (match(OPERATOR::PLUS) || match(OPERATOR::MINUS))
     {
-        if (auto right = parseTerm(); right != nullptr)
+        if (auto right = parseExpression(); right != nullptr)
         {
             std::unique_ptr<BinaryOperationNode> binOp = std::make_unique<BinaryOperationNode>();
             binOp->oper = token.getOperator();
