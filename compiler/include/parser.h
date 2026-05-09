@@ -35,12 +35,34 @@ expression  ::= term (binary_operator term)?  // TODO: должно быть `*`
 operand     ::= expression
 */
 
+enum class ASTNodeType
+{
+    NUMBER,
+    BINARY_OPERATION,
+    IDENTIFIER,
+    INSTRUCTION,
+    LABEL_DEF,
+    DATA,
+    DATA_SECTION,
+    CODE_SECTION,
+    EQU_ITEM,
+    EQU_SECTION,
+    PROGRAM,
+};
+
 class ASTNode
 {
 public:
     virtual ~ASTNode() = default;
 
+    virtual ASTNodeType getType() const = 0;
     virtual void print(int indent) const = 0;
+
+    template<typename T>
+    T* as()
+    {
+        return getType() == T::TYPE ? static_cast<T*>(this) : nullptr;
+    }
 
     size_t line;
     size_t column;
@@ -57,6 +79,9 @@ class NumberNode : public ExpressionNode
 public:
     std::variant<int, float> value;
 
+    static constexpr ASTNodeType TYPE = ASTNodeType::NUMBER;
+
+    ASTNodeType getType() const override { return ASTNodeType::NUMBER; }
     void print(int indent) const override;
 };
 
@@ -67,6 +92,9 @@ public:
     std::unique_ptr<ExpressionNode> right;
     OPERATOR oper;
 
+    static constexpr ASTNodeType TYPE = ASTNodeType::BINARY_OPERATION;
+
+    ASTNodeType getType() const override { return ASTNodeType::BINARY_OPERATION; }
     void print(int indent) const override;
 };
 
@@ -75,13 +103,16 @@ class IdentifierNode : public ExpressionNode
 public:
     std::string identifier;
 
+    static constexpr ASTNodeType TYPE = ASTNodeType::IDENTIFIER;
+
+    ASTNodeType getType() const override { return ASTNodeType::IDENTIFIER; }
     void print(int indent) const override;
 };
 
 class CodeStatementNode : public ASTNode
 {
 public:
-    
+
 };
 
 class InstructionNode : public CodeStatementNode
@@ -90,6 +121,9 @@ public:
     OP_CODE command;
     std::vector<std::unique_ptr<ExpressionNode>> operands;
 
+    static constexpr ASTNodeType TYPE = ASTNodeType::INSTRUCTION;
+
+    ASTNodeType getType() const override { return ASTNodeType::INSTRUCTION; }
     void print(int indent) const override;
 };
 
@@ -98,6 +132,9 @@ class LabelDefNode : public CodeStatementNode
 public:
     std::string identifier;
 
+    static constexpr ASTNodeType TYPE = ASTNodeType::LABEL_DEF;
+
+    ASTNodeType getType() const override { return ASTNodeType::LABEL_DEF; }
     void print(int indent) const override;
 };
 
@@ -109,6 +146,9 @@ public:
     std::string stringValue;
     DIRECTIVE dataDirective;
 
+    static constexpr ASTNodeType TYPE = ASTNodeType::DATA;
+
+    ASTNodeType getType() const override { return ASTNodeType::DATA; }
     void print(int indent) const override;
 };
 
@@ -117,6 +157,9 @@ class DataSectionNode : public ASTNode
 public:
     std::vector<std::unique_ptr<DataNode>> datas;
 
+    static constexpr ASTNodeType TYPE = ASTNodeType::DATA_SECTION;
+
+    ASTNodeType getType() const override { return ASTNodeType::DATA_SECTION; }
     void print(int indent) const override;
 };
 
@@ -125,6 +168,9 @@ class CodeSectionNode : public ASTNode
 public:
     std::vector<std::unique_ptr<CodeStatementNode>> nodes;
 
+    static constexpr ASTNodeType TYPE = ASTNodeType::CODE_SECTION;
+
+    ASTNodeType getType() const override { return ASTNodeType::CODE_SECTION; }
     void print(int indent) const override;
 };
 
@@ -134,6 +180,9 @@ public:
     std::string identifier;
     std::unique_ptr<ExpressionNode> expression;
 
+    static constexpr ASTNodeType TYPE = ASTNodeType::EQU_ITEM;
+
+    ASTNodeType getType() const override { return ASTNodeType::EQU_ITEM; }
     void print(int indent) const override;
 };
 
@@ -142,6 +191,9 @@ class EquSectionNode : public ASTNode
 public:
     std::vector<std::unique_ptr<EquItemNode>> nodes;
 
+    static constexpr ASTNodeType TYPE = ASTNodeType::EQU_SECTION;
+
+    ASTNodeType getType() const override { return ASTNodeType::EQU_SECTION; }
     void print(int indent) const override;
 };
 
@@ -149,8 +201,11 @@ class ProgramNode : public ASTNode
 {
 public:
     std::vector<std::unique_ptr<ASTNode>> nodes;
-    std::unordered_map<std::string, std::unique_ptr<EquItemNode>> equSection; 
+    std::unordered_map<std::string, std::unique_ptr<EquItemNode>> equSection;
 
+    static constexpr ASTNodeType TYPE = ASTNodeType::PROGRAM;
+
+    ASTNodeType getType() const override { return ASTNodeType::PROGRAM; }
     void print(int indent = 0) const override;
 };
 
