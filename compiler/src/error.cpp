@@ -42,6 +42,20 @@ std::string errorTemplate(ErrorType type)
         return "Wait expression, got {}";
     case ErrorType::EQU_ITEM_DUPLICATION:
         return "Duplication of definition {}";
+    case ErrorType::SYMBOL_REDEFINITION:
+        return "Redefinition of symbol '{}'";
+    case ErrorType::UNDEFINED_SYMBOL:
+        return "Undefined symbol '{}'";
+    case ErrorType::WRONG_OPERAND_COUNT:
+        return "Instruction '{}' expects {} operand(s), got {}";
+    case ErrorType::WRONG_OPERAND_TYPE:
+        return "Instruction '{}' expects operand of type {}, got {}";
+    case ErrorType::VALUE_OUT_OF_RANGE:
+        return "Value {} is out of range for {}";
+    case ErrorType::DIVISION_BY_ZERO:
+        return "Division by zero in constant expression";
+    case ErrorType::NON_CONSTANT_EXPRESSION:
+        return "Expression must be constant, but references '{}'";
 
     }
 

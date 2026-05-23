@@ -50,12 +50,21 @@ enum class ASTNodeType
     PROGRAM,
 };
 
+class DeclaredSymbol
+{
+public:
+    std::string label;
+    SYMBOL_KIND kind;
+};
+
 class ASTNode
 {
 public:
     virtual ~ASTNode() = default;
 
     virtual ASTNodeType getType() const = 0;
+    virtual std::optional<DeclaredSymbol> declaredSymbol() const { return std::nullopt; }
+    
     virtual void print(int indent) const = 0;
 
     template<typename T>
@@ -135,6 +144,12 @@ public:
     static constexpr ASTNodeType TYPE = ASTNodeType::LABEL_DEF;
 
     ASTNodeType getType() const override { return ASTNodeType::LABEL_DEF; }
+
+    std::optional<DeclaredSymbol> declaredSymbol() const override
+    {
+        return DeclaredSymbol { .label = identifier, .kind = SYMBOL_KIND::CODE};
+    };
+
     void print(int indent) const override;
 };
 
@@ -149,6 +164,12 @@ public:
     static constexpr ASTNodeType TYPE = ASTNodeType::DATA;
 
     ASTNodeType getType() const override { return ASTNodeType::DATA; }
+
+    std::optional<DeclaredSymbol> declaredSymbol() const override
+    {
+        return DeclaredSymbol { .label = label, .kind = SYMBOL_KIND::DATA};
+    };
+    
     void print(int indent) const override;
 };
 
@@ -183,6 +204,12 @@ public:
     static constexpr ASTNodeType TYPE = ASTNodeType::EQU_ITEM;
 
     ASTNodeType getType() const override { return ASTNodeType::EQU_ITEM; }
+
+    std::optional<DeclaredSymbol> declaredSymbol() const override
+    {
+        return DeclaredSymbol { .label = identifier, .kind = SYMBOL_KIND::EQU};
+    };
+    
     void print(int indent) const override;
 };
 
@@ -201,7 +228,6 @@ class ProgramNode : public ASTNode
 {
 public:
     std::vector<std::unique_ptr<ASTNode>> nodes;
-    std::unordered_map<std::string, std::unique_ptr<EquItemNode>> equSection;
 
     static constexpr ASTNodeType TYPE = ASTNodeType::PROGRAM;
 
@@ -214,15 +240,15 @@ class Parser
 public:
     explicit Parser(const std::vector<Token>& tokens, ErrorCollector& collector) noexcept;
     ProgramNode parse();
-    
+
 private:
     const Token& peek() const;
     const Token& advance();
-    
+
     std::unique_ptr<CodeSectionNode> parseCodeSection();
     std::unique_ptr<DataSectionNode> parseDataSection();
     std::unique_ptr<EquSectionNode> parseEquSection();
-    
+
     std::unique_ptr<DataNode> parseDataNode();
     std::unique_ptr<ExpressionNode> parseExpression();
     std::vector<std::unique_ptr<ExpressionNode>> parseExpressionsList();
@@ -256,11 +282,11 @@ private:
     void recoverTo(size_t pos);
 
     bool atSectionBoundary() const;
-    
+
     void syncToInstructionStart();
     void syncToDataNodeStart();
     void syncToEquItemStart();
-    
+
 private:
     ErrorCollector& m_errorCollector;
     const std::vector<Token>& m_tokens;

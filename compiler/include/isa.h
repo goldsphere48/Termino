@@ -75,3 +75,21 @@ enum class OPERATOR
     PLUS,
     COMMA,
 };
+
+enum class OPERAND_KIND
+{
+    I8,
+    I16,
+    F16,
+    U32,
+    DATA_LABEL,
+    CODE_LABEL,
+};
+
+
+enum class SYMBOL_KIND
+{
+    CODE,
+    EQU,
+    DATA,
+};

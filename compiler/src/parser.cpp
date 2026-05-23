@@ -26,17 +26,7 @@ ProgramNode Parser::parse()
         }
         else if (auto section = parseEquSection())
         {
-            for (auto& node : section->nodes)
-            {
-                if (program.equSection.find(node->identifier) == program.equSection.end())
-                {
-                    program.equSection[node->identifier] = std::move(node);   
-                }
-                else
-                {
-                    m_errorCollector.report(ErrorType::EQU_ITEM_DUPLICATION, node->line, node->column, { node->identifier });
-                }
-            }
+            program.nodes.push_back(std::move(section));
         }
         else if (peek().type == TOKEN_TYPE::END_OF_FILE)
         {

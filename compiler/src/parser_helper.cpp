@@ -107,17 +107,6 @@ void ProgramNode::print(int indent) const
 {
     std::cout << pad(indent) << "PROGRAM\n";
 
-    if (!equSection.empty())
-    {
-        std::cout << pad(indent + 1) << "EQU SECTION\n";
-        for (const auto& [name, value] : equSection)
-        {
-            std::cout << pad(indent + 2) << name << " = ";
-            value->expression->print(indent + 2);
-            std::cout << '\n';
-        }
-    }
-
     for (const auto& node : nodes)
     {
         node->print(indent + 1);

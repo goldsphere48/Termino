@@ -2,9 +2,7 @@
 
 #include <vector>
 #include <string>
-#include <string_view>
 #include <initializer_list>
-#include <ostream>
 
 #include "isa.h"
 
@@ -26,6 +24,13 @@ enum class ErrorType
     INVALID_EXPRESSION,
     EQU_ITEM_DUPLICATION,
     WAIT_EXPRESSION,
+    SYMBOL_REDEFINITION,
+    UNDEFINED_SYMBOL,
+    WRONG_OPERAND_COUNT,
+    WRONG_OPERAND_TYPE,
+    VALUE_OUT_OF_RANGE,
+    DIVISION_BY_ZERO,
+    NON_CONSTANT_EXPRESSION,
 };
 
 class ErrorMessage
@@ -53,7 +58,7 @@ public:
     void reportUnexpectedDirective(DIRECTIVE expected, DIRECTIVE actual, const Token& token);
     void reportUnexpectedOperator(OPERATOR expected, OPERATOR actual, const Token& token);
     void reportUnrecognizedToken(const Token& token);
-    
+
     void report(ErrorType errorType, int line, int column, std::initializer_list<std::string> args = {});
     bool hasError();
     void printAll();

@@ -1,5 +1,6 @@
 #include "lexer.h"
 #include "parser.h"
+#include "semantic.h"
 
 #include <iostream>
 #include <fstream>
@@ -53,4 +54,17 @@ int main(int argc, char** argv)
     }
 
     ast.print();
+
+    errors.clear();
+    
+    SemanticAnalyzer semantic(ast, errors);
+    semantic.analyze();
+
+    if (errors.hasError())
+    {
+        errors.printAll();
+        return 1;
+    }
+
+    semantic.printDeclaryedSymbols();
 }

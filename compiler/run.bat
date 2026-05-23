@@ -1,4 +1,3 @@
-@echo off
 setlocal
 
-%~dp0build/Debug/compiler.exe %~dp0examples/test.tasm
+%~dp0build/compiler.exe %~dp0examples/test.tasm
