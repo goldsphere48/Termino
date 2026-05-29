@@ -236,7 +236,7 @@ std::unique_ptr<ExpressionNode> Parser::parseTerm()
         }
         else
         {
-            m_errorCollector.report(ErrorType::INVALID_EXPRESSION, token.line, token.column, { Stringify::tokenValue(token) });
+            m_errorCollector.report(ERROR_TYPE::INVALID_EXPRESSION, token.line, token.column, { Stringify::tokenValue(token) });
         }
     }
 
@@ -272,7 +272,7 @@ std::unique_ptr<ExpressionNode> Parser::parseExpression()
         }
         else
         {
-            m_errorCollector.report(ErrorType::INVALID_EXPRESSION, token.line, token.column);
+            m_errorCollector.report(ERROR_TYPE::INVALID_EXPRESSION, token.line, token.column);
             return left;
         }
     }
@@ -297,7 +297,7 @@ std::vector<std::unique_ptr<ExpressionNode>> Parser::parseExpressionsList()
             
             if (waitForExpression)
             {
-                m_errorCollector.report(ErrorType::WAIT_EXPRESSION, token.line, token.column, { Stringify::tokenValue(token) });
+                m_errorCollector.report(ERROR_TYPE::WAIT_EXPRESSION, token.line, token.column, { Stringify::tokenValue(token) });
             }
 
 
@@ -342,7 +342,7 @@ std::unique_ptr<DataNode> Parser::parseDataNode()
             {
                 const Token& token = peek();
                 m_errorCollector.report(
-                    ErrorType::INVALID_EXPRESSION,
+                    ERROR_TYPE::INVALID_EXPRESSION,
                     token.line,
                     token.column
                 );
@@ -357,7 +357,7 @@ std::unique_ptr<DataNode> Parser::parseDataNode()
             const std::string got = std::string(Stringify::tokenValue(token));
             
             m_errorCollector.report(
-                ErrorType::EXPECTED_DATA_DIRECTIVE,
+                ERROR_TYPE::EXPECTED_DATA_DIRECTIVE,
                 token.line,
                 token.column,
                 { got }
@@ -495,7 +495,7 @@ std::unique_ptr<EquItemNode> Parser::parseEquItem()
         }
         else
         {
-            m_errorCollector.report(ErrorType::INVALID_EXPRESSION, token.line, token.column);
+            m_errorCollector.report(ERROR_TYPE::INVALID_EXPRESSION, token.line, token.column);
         }
     }
 

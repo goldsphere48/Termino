@@ -213,7 +213,7 @@ std::optional<Token> Lexer::readNext()
     if (auto t = tryParseIdentifier(value)) return t;
 
     m_errorCollector.report(
-        ErrorType::UNKNOWN_INSTRUCTION,
+        ERROR_TYPE::UNKNOWN_INSTRUCTION,
         m_tokenStartLine,
         m_tokenStartColumn,
         { std::string(value) }
@@ -240,7 +240,7 @@ std::optional<Token> Lexer::readString()
     if (m_pos >= m_source.length() || IsNewLine(peek()))
     {
         m_errorCollector.report(
-            ErrorType::UNEXPECTED_END_OF_STRING,
+            ERROR_TYPE::UNEXPECTED_END_OF_STRING,
             m_tokenStartLine,
             m_tokenStartColumn
         );
@@ -311,7 +311,7 @@ std::optional<Token> Lexer::tryParseMark(std::string_view value) const
     if (label.empty() || !IsIdentifier(label))
     {
         m_errorCollector.report(
-            ErrorType::INVALID_LABEL,
+            ERROR_TYPE::INVALID_LABEL,
             m_tokenStartLine,
             m_tokenStartColumn,
             { label }
@@ -346,7 +346,7 @@ std::optional<Token> Lexer::tryParseDirective(std::string_view value) const
     }
 
     m_errorCollector.report(
-        ErrorType::UNKNOWN_DIRECTIVE,
+        ERROR_TYPE::UNKNOWN_DIRECTIVE,
         m_tokenStartLine,
         m_tokenStartColumn,
         { directiveStr }
@@ -422,7 +422,7 @@ std::optional<Token> Lexer::tryParseNumber(std::string_view value) const
         if (ec == std::errc::result_out_of_range)
         {
             m_errorCollector.report(
-                ErrorType::INTEGER_LITERAL_OVERFLOW,
+                ERROR_TYPE::INTEGER_LITERAL_OVERFLOW,
                 m_tokenStartLine,
                 m_tokenStartColumn,
                 { std::string(value) }
@@ -453,7 +453,7 @@ std::optional<Token> Lexer::tryParseNumber(std::string_view value) const
         if (ec == std::errc::result_out_of_range)
         {
             m_errorCollector.report(
-                ErrorType::FLOAT_LITERAL_OVERFLOW,
+                ERROR_TYPE::FLOAT_LITERAL_OVERFLOW,
                 m_tokenStartLine,
                 m_tokenStartColumn,
                 { std::string(value) }

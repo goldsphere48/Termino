@@ -1,11 +1,11 @@
 .data
     sprite:
-        .byte ghghg + 0x23, 14, 85, 90 + 86 - 100 + -100, gjgjg
+        .byte ghghg + 0x23 14, 85, 90 + 86 - 100 + -100, gjgjg
 
 .equ
-    X: 10
-    z: dfdf
-    Y: 121
+    X: 10 + 10
+    Y: 121 + X
+    U: X
 
 .code
 PUSH8 8

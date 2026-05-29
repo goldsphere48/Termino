@@ -6,63 +6,64 @@
 #include <format>
 #include <iostream>
 
-std::string errorTemplate(ErrorType type)
+std::string errorTemplate(ERROR_TYPE type)
 {
     switch(type)
     {
-    case ErrorType::UNKNOWN_INSTRUCTION:
+    case ERROR_TYPE::UNKNOWN_INSTRUCTION:
         return "Unknown instruction {}";
-    case ErrorType::INTEGER_LITERAL_OVERFLOW:
+    case ERROR_TYPE::INTEGER_LITERAL_OVERFLOW:
         return "Integer literal {} is out of range";
-    case ErrorType::FLOAT_LITERAL_OVERFLOW:
+    case ERROR_TYPE::FLOAT_LITERAL_OVERFLOW:
         return "Floating literal {} is out of range";
-    case ErrorType::UNKNOWN_DIRECTIVE:
+    case ERROR_TYPE::UNKNOWN_DIRECTIVE:
         return "Unknown directive {}";
-    case ErrorType::INVALID_LABEL:
+    case ERROR_TYPE::INVALID_LABEL:
         return "Invalid label {}";
-    case ErrorType::UNEXPECTED_TOKEN_TYPE:
+    case ERROR_TYPE::UNEXPECTED_TOKEN_TYPE:
         return "Unexpected token type {}, expected {}";
-    case ErrorType::EXPECTED_DATA_DIRECTIVE:
+    case ERROR_TYPE::EXPECTED_DATA_DIRECTIVE:
         return "Expected data directive, got {}";
-    case ErrorType::BYTE_LITERAL_OVERFLOW:
+    case ERROR_TYPE::BYTE_LITERAL_OVERFLOW:
         return "Byte literal overflow {}";
-    case ErrorType::UNRECOGNIZED_TOKEN:
+    case ERROR_TYPE::UNRECOGNIZED_TOKEN:
         return "Unrecognized token {}";
-    case ErrorType::UNEXPECTED_DIRECTIVE:
+    case ERROR_TYPE::UNEXPECTED_DIRECTIVE:
         return "Unexpected directive {}, expected {}";
-    case ErrorType::UNEXPECTED_OPERATOR:
+    case ERROR_TYPE::UNEXPECTED_OPERATOR:
         return "Unexpected operator {}, expected {}";
-    case ErrorType::EXPECTED_BYTE_LITERAL:
+    case ERROR_TYPE::EXPECTED_BYTE_LITERAL:
         return "Expected byte literal, got {}";
-    case ErrorType::UNEXPECTED_END_OF_STRING:
+    case ERROR_TYPE::UNEXPECTED_END_OF_STRING:
         return "Unexpected end of string literal";
-    case ErrorType::INVALID_EXPRESSION:
+    case ERROR_TYPE::INVALID_EXPRESSION:
         return "Invalid expression";
-    case ErrorType::WAIT_EXPRESSION:
+    case ERROR_TYPE::WAIT_EXPRESSION:
         return "Wait expression, got {}";
-    case ErrorType::EQU_ITEM_DUPLICATION:
+    case ERROR_TYPE::EQU_ITEM_DUPLICATION:
         return "Duplication of definition {}";
-    case ErrorType::SYMBOL_REDEFINITION:
+    case ERROR_TYPE::SYMBOL_REDEFINITION:
         return "Redefinition of symbol '{}'";
-    case ErrorType::UNDEFINED_SYMBOL:
+    case ERROR_TYPE::UNDEFINED_SYMBOL:
         return "Undefined symbol '{}'";
-    case ErrorType::WRONG_OPERAND_COUNT:
+    case ERROR_TYPE::WRONG_OPERAND_COUNT:
         return "Instruction '{}' expects {} operand(s), got {}";
-    case ErrorType::WRONG_OPERAND_TYPE:
+    case ERROR_TYPE::WRONG_OPERAND_TYPE:
         return "Instruction '{}' expects operand of type {}, got {}";
-    case ErrorType::VALUE_OUT_OF_RANGE:
+    case ERROR_TYPE::VALUE_OUT_OF_RANGE:
         return "Value {} is out of range for {}";
-    case ErrorType::DIVISION_BY_ZERO:
+    case ERROR_TYPE::DIVISION_BY_ZERO:
         return "Division by zero in constant expression";
-    case ErrorType::NON_CONSTANT_EXPRESSION:
+    case ERROR_TYPE::NON_CONSTANT_EXPRESSION:
         return "Expression must be constant, but references '{}'";
-
+    case ERROR_TYPE::CYCLED_DEPENDECIE:
+        return "Cycled dependencie";
     }
 
     return "Unknown error";
 }
 
-ErrorMessage::ErrorMessage(ErrorType errorType, int line, int column, std::initializer_list<std::string> args)
+ErrorMessage::ErrorMessage(ERROR_TYPE errorType, int line, int column, std::initializer_list<std::string> args)
     : m_errorType(errorType), m_line(line), m_column(column), m_args(args)
 {
     
@@ -94,7 +95,7 @@ ErrorCollector::ErrorCollector(const std::string& filename, bool immidiate)
     
 }
 
-void ErrorCollector::report(ErrorType errorType, int line, int column, std::initializer_list<std::string> args)
+void ErrorCollector::report(ERROR_TYPE errorType, int line, int column, std::initializer_list<std::string> args)
 {
     if (m_immidiate)
     {
@@ -113,7 +114,7 @@ void ErrorCollector::reportUnexpectedToken(TOKEN_TYPE expected, const Token& tok
     std::string expectedStr = std::string(Stringify::tokenType(expected));
         
     report(
-        ErrorType::UNEXPECTED_TOKEN_TYPE,
+        ERROR_TYPE::UNEXPECTED_TOKEN_TYPE,
         token.line,
         token.column,
         { gotStr, expectedStr }
@@ -126,7 +127,7 @@ void ErrorCollector::reportUnexpectedDirective(DIRECTIVE expected, DIRECTIVE act
     std::string expectedStr = std::string(Stringify::directive(expected));
         
     report(
-        ErrorType::UNEXPECTED_DIRECTIVE,
+        ERROR_TYPE::UNEXPECTED_DIRECTIVE,
         token.line,
         token.column,
         { actualStr, expectedStr }
@@ -139,7 +140,7 @@ void ErrorCollector::reportUnexpectedOperator(OPERATOR expected, OPERATOR actual
     std::string expectedStr = std::string(Stringify::oper(expected));
         
     report(
-        ErrorType::UNEXPECTED_OPERATOR,
+        ERROR_TYPE::UNEXPECTED_OPERATOR,
         token.line,
         token.column,
         { actualStr, expectedStr }
@@ -150,7 +151,7 @@ void ErrorCollector::reportUnrecognizedToken(const Token& token)
 {
     std::string tokenStr = std::string(Stringify::tokenValue(token));
     report(
-        ErrorType::UNRECOGNIZED_TOKEN,
+        ERROR_TYPE::UNRECOGNIZED_TOKEN,
         token.line,
         token.column,
         { tokenStr }

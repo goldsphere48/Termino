@@ -50,10 +50,13 @@ enum class ASTNodeType
     PROGRAM,
 };
 
+class ExpressionNode;
+
 class DeclaredSymbol
 {
 public:
     std::string label;
+    const ExpressionNode* pExpression;
     SYMBOL_KIND kind;
 };
 
@@ -68,9 +71,9 @@ public:
     virtual void print(int indent) const = 0;
 
     template<typename T>
-    T* as()
+    const T* as() const
     {
-        return getType() == T::TYPE ? static_cast<T*>(this) : nullptr;
+        return getType() == T::TYPE ? static_cast<const T*>(this) : nullptr;
     }
 
     size_t line;
@@ -147,7 +150,7 @@ public:
 
     std::optional<DeclaredSymbol> declaredSymbol() const override
     {
-        return DeclaredSymbol { .label = identifier, .kind = SYMBOL_KIND::CODE};
+        return DeclaredSymbol { .label = identifier, .kind = SYMBOL_KIND::CODE };
     };
 
     void print(int indent) const override;
@@ -167,7 +170,11 @@ public:
 
     std::optional<DeclaredSymbol> declaredSymbol() const override
     {
-        return DeclaredSymbol { .label = label, .kind = SYMBOL_KIND::DATA};
+        return DeclaredSymbol
+        {
+            .label = label,
+            .kind = SYMBOL_KIND::DATA,
+        };
     };
     
     void print(int indent) const override;
@@ -207,7 +214,11 @@ public:
 
     std::optional<DeclaredSymbol> declaredSymbol() const override
     {
-        return DeclaredSymbol { .label = identifier, .kind = SYMBOL_KIND::EQU};
+        return DeclaredSymbol {
+            .label = identifier,
+            .pExpression = expression.get(),
+            .kind = SYMBOL_KIND::EQU,
+        };
     };
     
     void print(int indent) const override;

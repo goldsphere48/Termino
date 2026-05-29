@@ -1,5 +1,6 @@
 #pragma once
 
+#include "error.h"
 #include "parser.h"
 #include "target.h"
 
@@ -8,10 +9,22 @@ struct InstructionSpec
     std::vector<OPERAND_KIND> operands;
 };
 
+enum class RESOLVE_STATE
+{
+    UNVISITED,
+    IN_PROGRESS,
+    DONE,
+};
+
+using FoldedValue = std::variant<int, float>;
+using SymbolValue = std::variant<int, float, termino_platform::Address>;
+
 struct Symbol
 {
-    std::variant<int8_t, int16_t, float, termino_platform::Address> value;
+    SymbolValue value;
+    const ExpressionNode* expression;
     SYMBOL_KIND kind;
+    RESOLVE_STATE state = RESOLVE_STATE::UNVISITED;
     size_t line = 0;
     size_t column = 0;
 };
@@ -27,8 +40,10 @@ public:
 private:
     void collectSymbols();
     void resolveAndValidate();
-
-    std::optional<std::variant<int, float>> foldExpression() const;
+    void resolveConstants();
+    
+    std::optional<FoldedValue> resolveSymbol(const std::string& name);
+    std::optional<FoldedValue> foldExpression(const ExpressionNode* expression);
     
     bool tryAddSymbol(std::optional<DeclaredSymbol> declaredSymbol, size_t line, size_t column);
 

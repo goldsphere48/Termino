@@ -6,7 +6,7 @@
 
 #include "isa.h"
 
-enum class ErrorType
+enum class ERROR_TYPE
 {
     UNKNOWN_INSTRUCTION = 1000,
     INTEGER_LITERAL_OVERFLOW,
@@ -31,16 +31,17 @@ enum class ErrorType
     VALUE_OUT_OF_RANGE,
     DIVISION_BY_ZERO,
     NON_CONSTANT_EXPRESSION,
+    CYCLED_DEPENDECIE,
 };
 
 class ErrorMessage
 {
 public:
-    ErrorMessage(ErrorType errorType, int line, int column, std::initializer_list<std::string> args = {});
+    ErrorMessage(ERROR_TYPE errorType, int line, int column, std::initializer_list<std::string> args = {});
 
     std::string format(const std::string& filename) const;
 private:
-    ErrorType                m_errorType;
+    ERROR_TYPE                m_errorType;
     int                      m_line;
     int                      m_column;
     std::vector<std::string> m_args;
@@ -59,7 +60,7 @@ public:
     void reportUnexpectedOperator(OPERATOR expected, OPERATOR actual, const Token& token);
     void reportUnrecognizedToken(const Token& token);
 
-    void report(ErrorType errorType, int line, int column, std::initializer_list<std::string> args = {});
+    void report(ERROR_TYPE errorType, int line, int column, std::initializer_list<std::string> args = {});
     bool hasError();
     void printAll();
     void clear();
