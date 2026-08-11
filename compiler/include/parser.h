@@ -71,9 +71,21 @@ public:
     virtual void print(int indent) const = 0;
 
     template<typename T>
+    bool is() const
+    {
+        return getType() == T::TYPE;
+    }
+    
+    template<typename T>
     const T* as() const
     {
         return getType() == T::TYPE ? static_cast<const T*>(this) : nullptr;
+    }
+
+    template<typename T>
+    T* as()
+    {
+        return getType() == T::TYPE ? static_cast<T*>(this) : nullptr;
     }
 
     size_t line;
@@ -89,7 +101,7 @@ public:
 class NumberNode : public ExpressionNode
 {
 public:
-    std::variant<int, float> value;
+    std::variant<int64_t, float> value;
 
     static constexpr ASTNodeType TYPE = ASTNodeType::NUMBER;
 

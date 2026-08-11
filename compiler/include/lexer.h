@@ -3,6 +3,7 @@
 #include <vector>
 #include <variant>
 #include <string>
+#include <cstdint>
 
 #include "error.h"
 #include "isa.h"
@@ -10,7 +11,7 @@
 using TokenValue = std::variant<
     std::monostate,
     std::string,
-    int,
+    int64_t,
     float,
     OP_CODE,
     DIRECTIVE,
@@ -24,14 +25,14 @@ struct Token
     std::size_t line;
     std::size_t column;
 
-    bool hasInt() const { return std::holds_alternative<int>(value); }
+    bool hasInt() const { return std::holds_alternative<int64_t>(value); }
     bool hasFloat() const { return std::holds_alternative<float>(value); }
     bool hasString() const { return std::holds_alternative<std::string>(value); }
     bool hasOpCode() const { return std::holds_alternative<OP_CODE>(value);}
     bool hasDirective() const { return std::holds_alternative<DIRECTIVE>(value);}
     bool hasOperator() const { return std::holds_alternative<OPERATOR>(value);}
 
-    int getInt() const { return std::get<int>(value); }
+    int64_t getInt() const { return std::get<int64_t>(value); }
     float getFloat() const { return std::get<float>(value); }
     const std::string& getString() const { return std::get<std::string>(value); }
     OP_CODE getOpCode() const { return std::get<OP_CODE>(value); }

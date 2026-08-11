@@ -8,7 +8,7 @@
     U: X
 
 .code
-PUSH8 8
+PUSH8 8 + X
 loop:
 POP
 JMP loop

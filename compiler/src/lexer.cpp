@@ -400,7 +400,7 @@ std::optional<Token> Lexer::tryParseNumber(std::string_view value) const
 
         int shift = (isHex || isBin) ? 2 : 0;
         int base = isHex ? 16 : (isBin ? 2 : 10);
-        int intValue = 0;
+        int64_t intValue = 0;
 
         auto[ptr, ec] = std::from_chars(
             value.data() + shift,

@@ -25,13 +25,15 @@ namespace Stringify
         return "?";
     }
 
-    std::string_view opCode(OP_CODE type)
+    std::string opCode(OP_CODE type)
     {
         switch (type)
         {
         case OP_CODE::PUSH8:      return "PUSH8";
         case OP_CODE::PUSH16:     return "PUSH16";
-        case OP_CODE::PUSHF:      return "PUSHF";
+        case OP_CODE::PUSH32:     return "PUSH32";
+        case OP_CODE::PUSHF16:    return "PUSHF16";
+        case OP_CODE::PUSHF32:    return "PUSHF32";
         case OP_CODE::POP:        return "POP";
         case OP_CODE::DUP:        return "DUP";
         case OP_CODE::SWAP:       return "SWAP";
@@ -160,7 +162,9 @@ namespace Convert
         static const std::unordered_map<std::string_view, OP_CODE> table = {
             { "PUSH8",      OP_CODE::PUSH8      },
             { "PUSH16",     OP_CODE::PUSH16     },
-            { "PUSHF",      OP_CODE::PUSHF      },
+            { "PUSH32",     OP_CODE::PUSH32     },
+            { "PUSHF16",    OP_CODE::PUSHF16    },
+            { "PUSHF32",    OP_CODE::PUSHF32    },
             { "POP",        OP_CODE::POP        },
             { "DUP",        OP_CODE::DUP        },
             { "SWAP",       OP_CODE::SWAP       },

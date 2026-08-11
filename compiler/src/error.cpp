@@ -58,6 +58,9 @@ std::string errorTemplate(ERROR_TYPE type)
         return "Expression must be constant, but references '{}'";
     case ERROR_TYPE::CYCLED_DEPENDECIE:
         return "Cycled dependencie";
+    case ERROR_TYPE::COMPILER_INTERNAL_ERROR:
+        return "Something went wrong";
+                
     }
 
     return "Unknown error";

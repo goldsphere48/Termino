@@ -16,8 +16,8 @@ enum class RESOLVE_STATE
     DONE,
 };
 
-using FoldedValue = std::variant<int, float>;
-using SymbolValue = std::variant<int, float, termino_platform::Address>;
+using FoldedValue = std::variant<int64_t, float>;
+using SymbolValue = std::variant<int64_t, float, termino_platform::Address>;
 
 struct Symbol
 {
@@ -44,6 +44,8 @@ private:
     
     std::optional<FoldedValue> resolveSymbol(const std::string& name);
     std::optional<FoldedValue> foldExpression(const ExpressionNode* expression);
+    void validateInstruction(CodeStatementNode& stmt);
+    void validateDataNode(DataNode& data);
     
     bool tryAddSymbol(std::optional<DeclaredSymbol> declaredSymbol, size_t line, size_t column);
 

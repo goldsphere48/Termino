@@ -67,4 +67,6 @@ int main(int argc, char** argv)
     }
 
     semantic.printDeclaryedSymbols();
+
+    ast.print();
 }

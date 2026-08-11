@@ -197,7 +197,14 @@ std::unique_ptr<ExpressionNode> Parser::parseUnmodifiedTerm()
     if (match(TOKEN_TYPE::INT) || match(TOKEN_TYPE::FLOAT))
     {
         std::unique_ptr<NumberNode> number = std::make_unique<NumberNode>();
-        number->value = token.type == TOKEN_TYPE::INT ? token.getInt() : token.getFloat();
+        if (token.type == TOKEN_TYPE::INT)
+        {
+            number->value = token.getInt();
+        }
+        else
+        {
+            number->value = token.getFloat();
+        }
         node = std::move(number);
         node->line = token.line;
         node->column = token.column;

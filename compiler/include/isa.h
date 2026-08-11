@@ -21,7 +21,9 @@ enum class OP_CODE
     // STACK AND MEMORY
     PUSH8 = 0x0,
     PUSH16,
-    PUSHF,
+    PUSH32,
+    PUSHF16,
+    PUSHF32,
     POP,
     DUP,
     SWAP,
@@ -80,8 +82,9 @@ enum class OPERAND_KIND
 {
     I8,
     I16,
+    I32,
     F16,
-    U32,
+    F32,
     DATA_LABEL,
     CODE_LABEL,
 };
